@@ -9,7 +9,7 @@ services:
       - database
     environment:
       - APP_ENV=dev
-      - DATABASE_URL=mysql://root:root@database:3307/mealmates?serverVersion=8.0
+      - DATABASE_URL=mysql://root:root@database:3307/mealmates?serverVersion=11.7.2-MariaDB
 
   nginx:
     image: nginx:alpine
@@ -33,6 +33,14 @@ services:
       MYSQL_PASSWORD: symfony
     volumes:
       - db-data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: database
+      MYSQL_ROOT_PASSWORD: root
 
 volumes:
   db-data:
