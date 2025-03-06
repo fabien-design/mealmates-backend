@@ -51,9 +51,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToMany(targetEntity: Adress::class, mappedBy: 'id_user')]
     private Collection $adress;
 
+    /**
+     * @var Collection<int, Allergene>
+     */
+    #[ORM\ManyToMany(targetEntity: Allergene::class, inversedBy: 'User_allergene')]
+    private Collection $id_allergene;
+
+    /**
+     * @var Collection<int, FoodPreferences>
+     */
+    #[ORM\ManyToMany(targetEntity: FoodPreferences::class, inversedBy: 'user_foodPreferences')]
+    private Collection $food_preferences;
+
     public function __construct()
     {
         $this->adress = new ArrayCollection();
+        $this->id_allergene = new ArrayCollection();
+        $this->food_preferences = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -202,6 +216,54 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         if ($this->adress->removeElement($adress)) {
             $adress->removeIdUser($this);
         }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Allergene>
+     */
+    public function getIdAllergene(): Collection
+    {
+        return $this->id_allergene;
+    }
+
+    public function addIdAllergene(Allergene $idAllergene): static
+    {
+        if (!$this->id_allergene->contains($idAllergene)) {
+            $this->id_allergene->add($idAllergene);
+        }
+
+        return $this;
+    }
+
+    public function removeIdAllergene(Allergene $idAllergene): static
+    {
+        $this->id_allergene->removeElement($idAllergene);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, FoodPreferences>
+     */
+    public function getFoodPreferences(): Collection
+    {
+        return $this->food_preferences;
+    }
+
+    public function addFoodPreference(FoodPreferences $foodPreference): static
+    {
+        if (!$this->food_preferences->contains($foodPreference)) {
+            $this->food_preferences->add($foodPreference);
+        }
+
+        return $this;
+    }
+
+    public function removeFoodPreference(FoodPreferences $foodPreference): static
+    {
+        $this->food_preferences->removeElement($foodPreference);
 
         return $this;
     }
