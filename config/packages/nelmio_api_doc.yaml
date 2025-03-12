@@ -1,0 +1,28 @@
+nelmio_api_doc:
+    use_validation_groups: true
+    documentation:
+        info:
+            title: 'API MealMates'
+            description: 'Documentation de l''API MealMates'
+            version: '1.0.0'
+            contact:
+                name: 'Équipe API'
+                email: 'api@example.com'
+        components:
+            securitySchemes:
+                Bearer:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+        
+        security:
+            - Bearer: []    
+
+        tags:
+            -   name: Authentication
+                description: Endpoints pour l'authentification
+
+    areas:
+        default:
+            path_patterns:
+                - ^/api/v1
