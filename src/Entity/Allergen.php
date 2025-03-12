@@ -2,13 +2,13 @@
 
 namespace App\Entity;
 
-use App\Repository\AllergeneRepository;
+use App\Repository\AllergenRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: AllergeneRepository::class)]
-class Allergene
+#[ORM\Entity(repositoryClass: AllergenRepository::class)]
+class Allergen
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -21,12 +21,12 @@ class Allergene
     /**
      * @var Collection<int, User>
      */
-    #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'id_allergene')]
-    private Collection $User_allergene;
+    #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'allergen')]
+    private Collection $User_allergen;
 
     public function __construct()
     {
-        $this->User_allergene = new ArrayCollection();
+        $this->User_allergen = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -49,25 +49,25 @@ class Allergene
     /**
      * @return Collection<int, User>
      */
-    public function getUserAllergene(): Collection
+    public function getUserAllergen(): Collection
     {
-        return $this->User_allergene;
+        return $this->User_allergen;
     }
 
-    public function addUserAllergene(User $userAllergene): static
+    public function addUserAllergen(User $userAllergen): static
     {
-        if (!$this->User_allergene->contains($userAllergene)) {
-            $this->User_allergene->add($userAllergene);
-            $userAllergene->addIdAllergene($this);
+        if (!$this->User_allergen->contains($userAllergen)) {
+            $this->User_allergen->add($userAllergen);
+            $userAllergen->addAllergen($this);
         }
 
         return $this;
     }
 
-    public function removeUserAllergene(User $userAllergene): static
+    public function removeUserAllergen(User $userAllergen): static
     {
-        if ($this->User_allergene->removeElement($userAllergene)) {
-            $userAllergene->removeIdAllergene($this);
+        if ($this->User_allergen->removeElement($userAllergen)) {
+            $userAllergen->removeAllergen($this);
         }
 
         return $this;

@@ -46,27 +46,27 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $first_name = null;
 
     /**
-     * @var Collection<int, Adress>
+     * @var Collection<int, Address>
      */
-    #[ORM\ManyToMany(targetEntity: Adress::class, mappedBy: 'id_user')]
-    private Collection $adress;
+    #[ORM\ManyToMany(targetEntity: Address::class, mappedBy: 'id_user')]
+    private Collection $address;
 
     /**
-     * @var Collection<int, Allergene>
+     * @var Collection<int, Allergen>
      */
-    #[ORM\ManyToMany(targetEntity: Allergene::class, inversedBy: 'User_allergene')]
-    private Collection $id_allergene;
+    #[ORM\ManyToMany(targetEntity: Allergen::class, inversedBy: 'User_allergen')]
+    private Collection $allergen;
 
     /**
-     * @var Collection<int, FoodPreferences>
+     * @var Collection<int, FoodPreference>
      */
-    #[ORM\ManyToMany(targetEntity: FoodPreferences::class, inversedBy: 'user_foodPreferences')]
+    #[ORM\ManyToMany(targetEntity: FoodPreference::class, inversedBy: 'user_foodPreference')]
     private Collection $food_preferences;
 
     public function __construct()
     {
-        $this->adress = new ArrayCollection();
-        $this->id_allergene = new ArrayCollection();
+        $this->address = new ArrayCollection();
+        $this->allergen = new ArrayCollection();
         $this->food_preferences = new ArrayCollection();
     }
 
@@ -194,65 +194,65 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, Adress>
+     * @return Collection<int, Address>
      */
-    public function getAdress(): Collection
+    public function getAddress(): Collection
     {
-        return $this->adress;
+        return $this->address;
     }
 
-    public function addAdress(Adress $adress): static
+    public function addAddress(Address $address): static
     {
-        if (!$this->adress->contains($adress)) {
-            $this->adress->add($adress);
-            $adress->addIdUser($this);
+        if (!$this->address->contains($address)) {
+            $this->address->add($address);
+            $address->addIdUser($this);
         }
 
         return $this;
     }
 
-    public function removeAdress(Adress $adress): static
+    public function removeAddress(Address $address): static
     {
-        if ($this->adress->removeElement($adress)) {
-            $adress->removeIdUser($this);
+        if ($this->address->removeElement($address)) {
+            $address->removeIdUser($this);
         }
 
         return $this;
     }
 
     /**
-     * @return Collection<int, Allergene>
+     * @return Collection<int, Allergen>
      */
-    public function getIdAllergene(): Collection
+    public function getAllergen(): Collection
     {
-        return $this->id_allergene;
+        return $this->allergen;
     }
 
-    public function addIdAllergene(Allergene $idAllergene): static
+    public function addAllergen(Allergen $idAllergen): static
     {
-        if (!$this->id_allergene->contains($idAllergene)) {
-            $this->id_allergene->add($idAllergene);
+        if (!$this->allergen->contains($idAllergen)) {
+            $this->allergen->add($idAllergen);
         }
 
         return $this;
     }
 
-    public function removeIdAllergene(Allergene $idAllergene): static
+    public function removeAllergen(Allergen $idAllergen): static
     {
-        $this->id_allergene->removeElement($idAllergene);
+        $this->allergen->removeElement($idAllergen);
 
         return $this;
     }
 
     /**
-     * @return Collection<int, FoodPreferences>
+     * @return Collection<int, FoodPreference>
      */
-    public function getFoodPreferences(): Collection
+    public function getFoodPreference(): Collection
     {
         return $this->food_preferences;
     }
 
-    public function addFoodPreference(FoodPreferences $foodPreference): static
+    public function addFoodPreference(FoodPreference $foodPreference): static
     {
         if (!$this->food_preferences->contains($foodPreference)) {
             $this->food_preferences->add($foodPreference);
@@ -261,7 +261,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function removeFoodPreference(FoodPreferences $foodPreference): static
+    public function removeFoodPreference(FoodPreference $foodPreference): static
     {
         $this->food_preferences->removeElement($foodPreference);
 

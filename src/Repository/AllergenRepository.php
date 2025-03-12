@@ -2,22 +2,22 @@
 
 namespace App\Repository;
 
-use App\Entity\Adress;
+use App\Entity\Allergen;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<Adress>
+ * @extends ServiceEntityRepository<Allergen>
  */
-class AdressRepository extends ServiceEntityRepository
+class AllergenRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Adress::class);
+        parent::__construct($registry, Allergen::class);
     }
 
     //    /**
-    //     * @return Adress[] Returns an array of Adress objects
+    //     * @return Allergen[] Returns an array of Allergen objects
     //     */
     //    public function findByExampleField($value): array
     //    {
@@ -31,7 +31,7 @@ class AdressRepository extends ServiceEntityRepository
     //        ;
     //    }
 
-    //    public function findOneBySomeField($value): ?Adress
+    //    public function findOneBySomeField($value): ?Allergen
     //    {
     //        return $this->createQueryBuilder('a')
     //            ->andWhere('a.exampleField = :val')

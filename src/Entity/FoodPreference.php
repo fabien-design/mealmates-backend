@@ -2,13 +2,13 @@
 
 namespace App\Entity;
 
-use App\Repository\FoodPreferencesRepository;
+use App\Repository\FoodPreferenceRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: FoodPreferencesRepository::class)]
-class FoodPreferences
+#[ORM\Entity(repositoryClass: FoodPreferenceRepository::class)]
+class FoodPreference
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -16,17 +16,17 @@ class FoodPreferences
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
-    private ?string $nom = null;
+    private ?string $name = null;
 
     /**
      * @var Collection<int, User>
      */
     #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'food_preferences')]
-    private Collection $user_foodPreferences;
+    private Collection $user_foodPreference;
 
     public function __construct()
     {
-        $this->user_foodPreferences = new ArrayCollection();
+        $this->user_foodPreference = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -34,14 +34,14 @@ class FoodPreferences
         return $this->id;
     }
 
-    public function getNom(): ?string
+    public function getName(): ?string
     {
-        return $this->nom;
+        return $this->name;
     }
 
-    public function setNom(string $nom): static
+    public function setName(string $name): static
     {
-        $this->nom = $nom;
+        $this->name = $name;
 
         return $this;
     }
@@ -49,15 +49,15 @@ class FoodPreferences
     /**
      * @return Collection<int, User>
      */
-    public function getUserFoodPreferences(): Collection
+    public function getUserFoodPreference(): Collection
     {
-        return $this->user_foodPreferences;
+        return $this->user_foodPreference;
     }
 
     public function addUserFoodPreference(User $userFoodPreference): static
     {
-        if (!$this->user_foodPreferences->contains($userFoodPreference)) {
-            $this->user_foodPreferences->add($userFoodPreference);
+        if (!$this->user_foodPreference->contains($userFoodPreference)) {
+            $this->user_foodPreference->add($userFoodPreference);
             $userFoodPreference->addFoodPreference($this);
         }
 
@@ -66,7 +66,7 @@ class FoodPreferences
 
     public function removeUserFoodPreference(User $userFoodPreference): static
     {
-        if ($this->user_foodPreferences->removeElement($userFoodPreference)) {
+        if ($this->user_foodPreference->removeElement($userFoodPreference)) {
             $userFoodPreference->removeFoodPreference($this);
         }
 
