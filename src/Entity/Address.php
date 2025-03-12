@@ -2,13 +2,13 @@
 
 namespace App\Entity;
 
-use App\Repository\AdressRepository;
+use App\Repository\AddressRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: AdressRepository::class)]
-class Adress
+#[ORM\Entity(repositoryClass: AddressRepository::class)]
+class Address
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -22,7 +22,7 @@ class Adress
     private ?string $zipCode = null;
 
     #[ORM\Column(length: 100)]
-    private ?string $adress = null;
+    private ?string $address = null;
 
     #[ORM\Column(length: 50)]
     private ?string $region = null;
@@ -30,7 +30,7 @@ class Adress
     /**
      * @var Collection<int, User>
      */
-    #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'adress')]
+    #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'address')]
     private Collection $id_user;
 
     public function __construct()
@@ -67,14 +67,14 @@ class Adress
         return $this;
     }
 
-    public function getAdress(): ?string
+    public function getAddress(): ?string
     {
-        return $this->adress;
+        return $this->address;
     }
 
-    public function setAdress(string $adress): static
+    public function setAddress(string $address): static
     {
-        $this->adress = $adress;
+        $this->address = $address;
 
         return $this;
     }
