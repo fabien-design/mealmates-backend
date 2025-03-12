@@ -13,3 +13,6 @@ down:
 
 fixtures:
 	docker compose exec php bin/console doctrine:fixtures:load
+
+generate-keys:
+	docker compose exec php php bin/console lexik:jwt:generate-keypair
