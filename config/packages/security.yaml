@@ -36,7 +36,7 @@ security:
                 login_path:   /connect
                 use_forward:  false
                 failure_path: /connect
-                default_target_path: /connect/success
+                default_target_path: /login/success
                 oauth_user_provider:
                     service: App\Security\OAuthUserProvider
 

@@ -11,7 +11,7 @@ use HWI\Bundle\OAuthBundle\Security\Core\Authentication\Token\OAuthToken;
 
 class OAuthController extends AbstractController
 {
-    #[Route('/connect/success', name: 'connect_success')]
+    #[Route('/login/success', name: 'login_success')]
     public function connectSuccess(): Response
     {
         $user = $this->getUser();
@@ -21,7 +21,6 @@ class OAuthController extends AbstractController
         }
 
         $token = $this->container->get('security.token_storage')->getToken();
-        dd($token);
         $oauthData = [];
         
         if ($token instanceof OAuthToken) {

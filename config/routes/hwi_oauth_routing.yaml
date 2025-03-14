@@ -1,5 +1,5 @@
-connect_success:
-    path: /connect/success
+login_success:
+    path: /login/success
     controller: App\Controller\OAuthController::connectSuccess
 
 hwi_oauth_redirect:
