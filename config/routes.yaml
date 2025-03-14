@@ -6,7 +6,3 @@ controllers:
         path: ../src/Controller/
         namespace: App\Controller
     type: attribute
-
-connect_success:
-    path: /connect/success
-    controller: App\Controller\OAuthController::connectSuccess

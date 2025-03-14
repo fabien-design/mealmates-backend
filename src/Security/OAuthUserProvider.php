@@ -30,11 +30,10 @@ class OAuthUserProvider implements OAuthAwareUserProviderInterface
         }
 
         if (!$user) {
-            // Créer un nouvel utilisateur
             $user = new User();
             $user->setEmail($email);
             $user->setIsEmailValid(true);
-            $user->setPassword(''); // Pas de mot de passe pour OAuth
+            $user->setPassword('');
             $user->setRoles(['ROLE_USER']);
             
             $realName = $response->getRealName() ?: '';
@@ -47,8 +46,7 @@ class OAuthUserProvider implements OAuthAwareUserProviderInterface
                 $user->setLastName('');
             }
         }
-
-        // Mettre à jour l'ID OAuth
+ 
         $setter = 'set' . ucfirst($resourceOwnerName) . 'Id';
         $user->$setter($resourceOwnerId);
 

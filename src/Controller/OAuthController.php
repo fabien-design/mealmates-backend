@@ -1,23 +1,40 @@
 <?php
+// src/Controller/OAuthController.php
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Core\User\UserInterface;
+use HWI\Bundle\OAuthBundle\Security\Core\Authentication\Token\OAuthToken;
 
 class OAuthController extends AbstractController
 {
-    // #[Route('/connect', name: 'connect')]
-    // public function connect(): Response
-    // {
-    //     return $this->render('oauth/connect.html.twig');
-    // }
-
     #[Route('/connect/success', name: 'connect_success')]
     public function connectSuccess(): Response
     {
-        $this->addFlash('success', 'Connexion réussie via authentification externe.');
-        dd('connect_success');
-        return $this->redirectToRoute('app_homepage');
+        $user = $this->getUser();
+        
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        $token = $this->container->get('security.token_storage')->getToken();
+        dd($token);
+        $oauthData = [];
+        
+        if ($token instanceof OAuthToken) {
+            $oauthData = [
+                'access_token' => $token->getAccessToken(),
+                'provider' => $token->getResourceOwnerName(),
+                'expires_at' => $token->getExpiresAt() ? $token->getExpiresAt() : null,
+                'refresh_token' => $token->getRefreshToken(),
+            ];
+        }
+
+        $encodedData = base64_encode(json_encode($oauthData));
+        
+        return $this->redirect('http://localhost:5173/auth-callback?oauth_data=' . $encodedData);
     }
 }
