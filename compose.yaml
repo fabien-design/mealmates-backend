@@ -37,5 +37,8 @@ services:
       PMA_HOST: database
       MYSQL_ROOT_PASSWORD: root
 
+  mailbox:
+    image: mailhog/mailhog
+
 volumes:
   db-data:
