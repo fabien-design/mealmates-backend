@@ -32,17 +32,26 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var string The hashed password
      */
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?string $password = null;
 
-    #[ORM\Column(length: 50)]
+    #[ORM\Column(length: 50, nullable: true)]
     private ?string $last_name = null;
 
     #[ORM\Column(nullable: true)]
     private ?bool $sexe = null;
 
-    #[ORM\Column(length: 50)]
+    #[ORM\Column(length: 50, nullable: true)]
     private ?string $first_name = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $facebookId = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $googleId = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $githubId = null;
 
     /**
      * @var Collection<int, Address>
@@ -82,7 +91,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->email;
     }
 
-    public function setEmail(string $email): static
+    public function setEmail(?string $email): static
     {
         $this->email = $email;
 
@@ -131,7 +140,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->password;
     }
 
-    public function setPassword(string $password): static
+    public function setPassword(?string $password): static
     {
         $this->password = $password;
 
@@ -152,7 +161,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->last_name;
     }
 
-    public function setLastName(string $last_name): static
+    public function setLastName(?string $last_name): static
     {
         $this->last_name = $last_name;
 
@@ -164,7 +173,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->sexe;
     }
 
-    public function setSexe(bool $sexe): static
+    public function setSexe(?bool $sexe): static
     {
         $this->sexe = $sexe;
 
@@ -176,9 +185,45 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->first_name;
     }
 
-    public function setFirstName(string $first_name): static
+    public function setFirstName(?string $first_name): static
     {
         $this->first_name = $first_name;
+
+        return $this;
+    }
+
+    public function getFacebookId(): ?string
+    {
+        return $this->facebookId;
+    }
+
+    public function setFacebookId(?string $facebookId): static
+    {
+        $this->facebookId = $facebookId;
+
+        return $this;
+    }
+
+    public function getGoogleId(): ?string
+    {
+        return $this->googleId;
+    }
+
+    public function setGoogleId(?string $googleId): static
+    {
+        $this->googleId = $googleId;
+
+        return $this;
+    }
+
+    public function getGithubId(): ?string
+    {
+        return $this->githubId;
+    }
+
+    public function setGithubId(?string $githubId): static
+    {
+        $this->githubId = $githubId;
 
         return $this;
     }

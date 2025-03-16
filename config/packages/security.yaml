@@ -4,11 +4,13 @@ security:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        # used to reload user from session & other features (e.g. switch_user)
         app_user_provider:
             entity:
                 class: App\Entity\User
                 property: email
+        hwi_provider:
+            id: hwi_oauth.user.provider.entity
+
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
@@ -23,11 +25,28 @@ security:
                 password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
+            provider: app_user_provider
+
+        main:
+            oauth:
+                resource_owners:
+                    facebook:           "/connect/facebook/check"
+                    google:             "/connect/google/check"
+                    github:             "/connect/github/check"
+                login_path:   /connect
+                use_forward:  false
+                failure_path: /connect
+                default_target_path: /login/success
+                oauth_user_provider:
+                    service: App\Security\OAuthUserProvider
+
+                provider: hwi_provider
 
         api:
             pattern:   ^/api/v1
             stateless: true
             jwt: ~
+            provider: app_user_provider
 
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
