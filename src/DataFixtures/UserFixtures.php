@@ -141,7 +141,7 @@ class UserFixtures extends Fixture
             $user->setPassword($this->passwordEncoder->hashPassword($user, self::USERS[$i]['password']));
             $user->setFirstName(self::USERS[$i]['first_name']);
             $user->setLastName(self::USERS[$i]['last_name']);
-            $user->setIsEmailValid(self::USERS[$i]['isEmailValid']);
+            $user->setIsVerified(self::USERS[$i]['isEmailValid']);
             $user->setSexe(self::USERS[$i]['sexe']);
             $this->addReference(self::REFERENCE_IDENTIFIER . self::USERS[$i]['identifier'], $user);
 

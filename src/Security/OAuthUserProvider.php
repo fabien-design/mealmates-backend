@@ -32,7 +32,7 @@ class OAuthUserProvider implements OAuthAwareUserProviderInterface
         if (!$user) {
             $user = new User();
             $user->setEmail($email);
-            $user->setIsEmailValid(true);
+            $user->setIsVerified(true);
             $user->setPassword('');
             $user->setRoles(['ROLE_USER']);
             
