@@ -8,9 +8,13 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\User\UserInterface;
 use HWI\Bundle\OAuthBundle\Security\Core\Authentication\Token\OAuthToken;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class OAuthController extends AbstractController
 {
+
+    public function __construct(private ParameterBagInterface $params) {}
+
     #[Route('/login/success', name: 'login_success')]
     public function connectSuccess(): Response
     {
@@ -33,7 +37,9 @@ class OAuthController extends AbstractController
         }
 
         $encodedData = base64_encode(json_encode($oauthData));
+
+        $frontendUrl = $this->params->get('app.frontend_url');
         
-        return $this->redirect('http://localhost:5173/auth-callback?oauth_data=' . $encodedData);
+        return $this->redirect($frontendUrl . '/auth-callback?oauth_data=' . $encodedData);
     }
 }
