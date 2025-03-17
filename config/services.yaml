@@ -37,4 +37,6 @@ services:
     
     App\Controller\UserController:
         arguments:
-            $params: '@parameter_bag'
+            $params: '@parameter_bag' 
+
+    HWI\Bundle\OAuthBundle\Security\Http\ResourceOwnerMap: '@hwi_oauth.resource_ownermap.main'

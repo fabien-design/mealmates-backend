@@ -6,6 +6,8 @@ use App\Repository\AllergenRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AllergenRepository::class)]
 class Allergen
@@ -13,15 +15,23 @@ class Allergen
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['allergen:read', 'user:read', 'user:profile'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['allergen:read', 'allergen:write', 'user:read', 'user:profile'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        max: 50,
+        maxMessage: 'The allergen must be at most {{ limit }} characters long',
+    )]
     private ?string $name = null;
 
     /**
      * @var Collection<int, User>
      */
     #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'allergen')]
+    #[Groups(['allergen:read'])]
     private Collection $User_allergen;
 
     public function __construct()

@@ -6,6 +6,8 @@ use App\Repository\AddressRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AddressRepository::class)]
 class Address
@@ -13,24 +15,50 @@ class Address
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['address:read', 'user:read', 'user:profile'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        max: 50,
+        maxMessage: 'The city must be at most {{ limit }} characters long',
+    )]
     private ?string $city = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        max: 50,
+        maxMessage: 'The zip code must be at most {{ limit }} characters long',
+    )]
     private ?string $zipCode = null;
 
     #[ORM\Column(length: 100)]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        max: 100,
+        maxMessage: 'The address must be at most {{ limit }} characters long',
+    )]
     private ?string $address = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        max: 50,
+        maxMessage: 'The region must be at most {{ limit }} characters long',
+    )]
     private ?string $region = null;
 
     /**
      * @var Collection<int, User>
      */
     #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'address')]
+    #[Groups(['address:read'])]
     private Collection $id_user;
 
     public function __construct()

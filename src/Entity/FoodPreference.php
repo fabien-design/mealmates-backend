@@ -6,6 +6,8 @@ use App\Repository\FoodPreferenceRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: FoodPreferenceRepository::class)]
 class FoodPreference
@@ -13,15 +15,23 @@ class FoodPreference
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['food_preference:read', 'user:read', 'user:profile'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['food_preference:read', 'food_preference:write', 'user:read', 'user:profile'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        max: 50,
+        maxMessage: 'The food preference must be at most {{ limit }} characters long',
+    )]
     private ?string $name = null;
 
     /**
      * @var Collection<int, User>
      */
     #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'food_preferences')]
+    #[Groups(['food_preference:read'])]
     private Collection $user_foodPreference;
 
     public function __construct()
