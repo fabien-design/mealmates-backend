@@ -27,6 +27,12 @@ security:
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
             provider: app_user_provider
 
+        api:
+            pattern: ^/api/v1
+            stateless: true
+            jwt: ~
+            provider: app_user_provider
+
         main:
             oauth:
                 resource_owners:
@@ -41,12 +47,6 @@ security:
                     service: App\Security\OAuthUserProvider
 
                 provider: hwi_provider
-
-        api:
-            pattern:   ^/api/v1
-            stateless: true
-            jwt: ~
-            provider: app_user_provider
 
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used

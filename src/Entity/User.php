@@ -9,6 +9,8 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
@@ -18,30 +20,93 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['user:read', 'address:read', 'allergen:read', 'food_preference:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
+    #[Groups(['user:read', 'user:write', 'allergen:read', 'food_preference:read'])]
+    #[Assert\NotBlank]
+    #[Assert\Email(
+        message: 'The email {{ value }} is not a valid email.',
+    )]
+    #[Assert\Length(
+        max: 180,
+        maxMessage: 'The email must be at most {{ limit }} characters long',
+    )]
     private ?string $email = null;
 
     /**
      * @var list<string> The user roles
      */
     #[ORM\Column]
+    #[Groups(['user:read', 'user:write', 'admin:read'])]
     private array $roles = [];
 
     /**
      * @var string The hashed password
      */
     #[ORM\Column(nullable: true)]
+    #[Groups(['user:write'])]
+    #[Assert\When(
+        expression: 'this.getPassword() != null',
+        constraints: [
+            new Assert\NotBlank(message: "Le mot de passe ne peut pas être vide"),
+            new Assert\Length(
+                min: 8,
+                minMessage: "Le mot de passe doit contenir au moins {{ limit }} caractères",
+            ),
+            new Assert\Regex(
+                pattern: "/[A-Z]/",
+                message: "Le mot de passe doit contenir au moins une lettre majuscule"
+            ),
+            new Assert\Regex(
+                pattern: "/[a-z]/",
+                message: "Le mot de passe doit contenir au moins une lettre minuscule"
+            ),
+            new Assert\Regex(
+                pattern: "/[0-9]/",
+                message: "Le mot de passe doit contenir au moins un chiffre"
+            ),
+            new Assert\Regex(
+                pattern: "/[^A-Za-z0-9]/",
+                message: "Le mot de passe doit contenir au moins un caractère spécial"
+            )
+        ]
+    )]
     private ?string $password = null;
 
     #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['user:read', 'user:write', 'user:profile'])]
+    #[Assert\When(
+        expression: 'this.getLastName() != null',
+        constraints: [
+            new Assert\Length(
+                min: 2,
+                max: 50,
+                minMessage: "Le nom doit contenir au moins {{ limit }} caractères",
+                maxMessage: "Le nom ne peut pas dépasser {{ limit }} caractères"
+            )
+        ]
+    )]
     private ?string $last_name = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['user:read', 'user:write', 'user:profile'])]
     private ?bool $sexe = null;
 
     #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['user:read', 'user:write', 'user:profile'])]
+    #[Assert\When(
+        expression: 'this.getLastName() != null',
+        constraints: [
+            new Assert\Length(
+                min: 2,
+                max: 50,
+                minMessage: "Le prénom doit contenir au moins {{ limit }} caractères",
+                maxMessage: "Le prénom ne peut pas dépasser {{ limit }} caractères"
+            )
+        ]
+    )]
     private ?string $first_name = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -57,21 +122,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @var Collection<int, Address>
      */
     #[ORM\ManyToMany(targetEntity: Address::class, mappedBy: 'id_user')]
+    #[Groups(['user:read', 'user:profile'])]
     private Collection $address;
 
     /**
      * @var Collection<int, Allergen>
      */
     #[ORM\ManyToMany(targetEntity: Allergen::class, inversedBy: 'User_allergen')]
+    #[Groups(['user:read', 'user:profile'])]
     private Collection $allergen;
 
     /**
      * @var Collection<int, FoodPreference>
      */
     #[ORM\ManyToMany(targetEntity: FoodPreference::class, inversedBy: 'user_foodPreference')]
+    #[Groups(['user:read', 'user:profile'])]
     private Collection $food_preferences;
 
     #[ORM\Column]
+    #[Groups(['user:read', 'admin:read'])]
     private bool $isVerified = false;
 
     public function __construct()
