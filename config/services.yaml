@@ -5,6 +5,8 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     app.frontend_url: '%env(FRONTEND_URL)%'
+    app.email_sender: '%env(EMAIL_SENDER)%'
+    app.email_sender_name: '%env(EMAIL_SENDER_NAME)%'
 
 services:
     # default configuration for services in *this* file
@@ -32,3 +34,7 @@ services:
     App\Controller\OAuthController:
         arguments:
             $params: '@parameter_bag' 
+    
+    App\Controller\UserController:
+        arguments:
+            $params: '@parameter_bag'

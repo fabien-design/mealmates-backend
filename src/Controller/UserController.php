@@ -19,12 +19,14 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use SymfonyCasts\Bundle\VerifyEmail\Exception\VerifyEmailExceptionInterface;
 use OpenApi\Attributes as OA;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 #[Route('/api/v1')]
 class UserController extends AbstractController
 {
     public function __construct(
-        private EmailVerifier $emailVerifier
+        private EmailVerifier $emailVerifier,
+        private ParameterBagInterface $params
     )
     {
     }
@@ -130,9 +132,12 @@ class UserController extends AbstractController
         $entityManager->persist($user);
         $entityManager->flush();
 
+        $sender = $this->params->get('app.email_sender');
+        $senderName = $this->params->get('app.email_sender_name');
+
         $this->emailVerifier->sendEmailConfirmation('app_verify_email', $user,
             (new TemplatedEmail())
-                ->from(new Address('no-reply@mealmates.com', 'MealMates'))
+                ->from(new Address($sender, $senderName))
                 ->to($user->getEmail())
                 ->subject('Please Confirm your Email')
                 ->htmlTemplate('emails/verification.html.twig')
