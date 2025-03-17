@@ -41,7 +41,7 @@ class OAuthController extends AbstractController
                 'refresh_token' => $token->getRefreshToken(),
             ];
         }
-        dd($oauthData);
+
         $encodedData = base64_encode(json_encode($oauthData));
 
         $frontendUrl = $this->params->get('app.frontend_url');
