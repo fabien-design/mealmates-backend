@@ -27,8 +27,7 @@ class UserController extends AbstractController
     public function __construct(
         private EmailVerifier $emailVerifier,
         private ParameterBagInterface $params
-    )
-    {
+    ) {
     }
 
     #[Route('/register', name: 'app_user_register', methods: ['POST'])]
@@ -42,7 +41,6 @@ class UserController extends AbstractController
                 new OA\Property(property: 'password', type: 'string', example: 'password123'),
                 new OA\Property(property: 'firstName', type: 'string', example: 'John'),
                 new OA\Property(property: 'lastName', type: 'string', example: 'Doe'),
-                new OA\Property(property: 'sexe', type: 'boolean', example: true, description: 'true for male, false for female')
             ]
         )
     )]
@@ -77,13 +75,12 @@ class UserController extends AbstractController
         )
     )]
     public function register(
-        Request $request, 
-        UserPasswordHasherInterface $passwordHasher, 
+        Request $request,
+        UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator,
         JWTTokenManagerInterface $jwtManager
-    ): JsonResponse
-    {
+    ): JsonResponse {
         $data = json_decode($request->getContent(), true);
 
         if (!isset($data['email']) || !isset($data['password']) || !isset($data['firstName']) || !isset($data['lastName'])) {
@@ -108,9 +105,6 @@ class UserController extends AbstractController
         $user->setRoles(['ROLE_USER']);
         $user->setIsVerified(false);
 
-        if (isset($data['sexe'])) {
-            $user->setSexe($data['sexe']);
-        }
 
         $hashedPassword = $passwordHasher->hashPassword($user, $data['password']);
         $user->setPassword($hashedPassword);
@@ -121,7 +115,7 @@ class UserController extends AbstractController
             foreach ($violations as $violation) {
                 $errors[$violation->getPropertyPath()] = $violation->getMessage();
             }
-            
+
             return $this->json([
                 'status' => 400,
                 'message' => 'Validation failed',
@@ -135,7 +129,9 @@ class UserController extends AbstractController
         $sender = $this->params->get('app.email_sender');
         $senderName = $this->params->get('app.email_sender_name');
 
-        $this->emailVerifier->sendEmailConfirmation('app_verify_email', $user,
+        $this->emailVerifier->sendEmailConfirmation(
+            'app_verify_email',
+            $user,
             (new TemplatedEmail())
                 ->from(new Address($sender, $senderName))
                 ->to($user->getEmail())
@@ -147,12 +143,12 @@ class UserController extends AbstractController
         );
 
         $jwt = $jwtManager->create($user);
-        
+
         return $this->json([
             'token' => $jwt,
         ], Response::HTTP_CREATED);
     }
-    
+
     #[Route('/verify-email', name: 'app_verify_email', methods: ['GET'])]
     #[OA\Tag(name: 'Authentication')]
     #[OA\Parameter(
@@ -201,16 +197,16 @@ class UserController extends AbstractController
     public function verifyEmail(Request $request, UserRepository $userRepository): JsonResponse
     {
         $id = $request->query->get('id');
-        
+
         if (null === $id) {
             return $this->json([
                 'status' => 400,
                 'message' => 'Missing id parameter'
             ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         $user = $userRepository->find($id);
-        
+
         if (null === $user) {
             return $this->json([
                 'status' => 404,
@@ -232,7 +228,7 @@ class UserController extends AbstractController
             'message' => 'Email verified successfully'
         ]);
     }
-    
+
     #[Route('/resend-verification-email', name: 'app_resend_verification', methods: ['POST'])]
     #[OA\Tag(name: 'Authentication')]
     #[OA\RequestBody(
@@ -264,35 +260,36 @@ class UserController extends AbstractController
         )
     )]
     public function resendVerificationEmail(
-        Request $request, 
+        Request $request,
         UserRepository $userRepository
-    ): JsonResponse
-    {
+    ): JsonResponse {
         $data = json_decode($request->getContent(), true);
-        
+
         if (!isset($data['email'])) {
             return $this->json([
                 'status' => 400,
                 'message' => 'Email is required'
             ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         $user = $userRepository->findOneBy(['email' => $data['email']]);
-        
+
         if (!$user) {
             return $this->json([
                 'status' => 404,
                 'message' => 'User not found'
             ], Response::HTTP_NOT_FOUND);
         }
-        
+
         if ($user->isValid()) {
             return $this->json([
                 'message' => 'Email is already verified'
             ]);
         }
 
-        $this->emailVerifier->sendEmailConfirmation('app_verify_email', $user,
+        $this->emailVerifier->sendEmailConfirmation(
+            'app_verify_email',
+            $user,
             (new TemplatedEmail())
                 ->from(new Address('no-reply@mealmates.com', 'MealMates'))
                 ->to($user->getEmail())
@@ -302,7 +299,7 @@ class UserController extends AbstractController
                     'user' => $user
                 ])
         );
-        
+
         return $this->json([
             'message' => 'Verification email sent successfully'
         ]);

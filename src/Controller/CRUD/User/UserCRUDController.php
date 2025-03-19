@@ -42,7 +42,7 @@ class UserCRUDController extends AbstractController
     public function show(): JsonResponse
     {
         $user = $this->getUser();
-        
+
         if (!$user instanceof User) {
             throw new AccessDeniedHttpException('Vous devez être connecté pour accéder à cette ressource.');
         }
@@ -61,7 +61,6 @@ class UserCRUDController extends AbstractController
             properties: [
                 new OA\Property(property: 'firstName', type: 'string', example: 'John'),
                 new OA\Property(property: 'lastName', type: 'string', example: 'Doe'),
-                new OA\Property(property: 'sexe', type: 'boolean', example: true)
             ]
         )
     )]
@@ -79,11 +78,10 @@ class UserCRUDController extends AbstractController
         ValidatorInterface $validator,
         SerializerInterface $serializer,
         EntityManagerInterface $em
-    ): JsonResponse
-    {
+    ): JsonResponse {
         /** @var User $user */
         $user = $this->getUser();
-        
+
         if (!$user instanceof User) {
             throw new AccessDeniedHttpException('Vous devez être connecté pour accéder à cette ressource.');
         }

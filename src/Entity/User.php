@@ -90,10 +90,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     )]
     private ?string $last_name = null;
 
-    #[ORM\Column(nullable: true)]
-    #[Groups(['user:read', 'user:write', 'user:profile'])]
-    private ?bool $sexe = null;
-
     #[ORM\Column(length: 50, nullable: true)]
     #[Groups(['user:read', 'user:write', 'user:profile'])]
     #[Assert\When(
@@ -233,18 +229,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setLastName(?string $last_name): static
     {
         $this->last_name = $last_name;
-
-        return $this;
-    }
-
-    public function isSexe(): ?bool
-    {
-        return $this->sexe;
-    }
-
-    public function setSexe(?bool $sexe): static
-    {
-        $this->sexe = $sexe;
 
         return $this;
     }
