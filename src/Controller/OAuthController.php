@@ -4,11 +4,10 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Core\User\UserInterface;
 use HWI\Bundle\OAuthBundle\Security\Core\Authentication\Token\OAuthToken;
 use HWI\Bundle\OAuthBundle\Security\Http\ResourceOwnerMap;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use OpenApi\Attributes as OA;
@@ -18,7 +17,8 @@ class OAuthController extends AbstractController
 
     public function __construct(
         private ParameterBagInterface $params,
-        private ResourceOwnerMap $resourceOwnerMap
+        private ResourceOwnerMap $resourceOwnerMap,
+        private JWTTokenManagerInterface $jwtManager
     ) {}
 
     #[Route('/login/success', name: 'login_success')]
@@ -42,11 +42,13 @@ class OAuthController extends AbstractController
             ];
         }
 
+        $jwt = $this->jwtManager->createFromPayload($user, $oauthData);
+
         $encodedData = base64_encode(json_encode($oauthData));
 
         $frontendUrl = $this->params->get('app.frontend_url');
         
-        return $this->redirect($frontendUrl . '/auth-callback?oauth_data=' . $encodedData);
+        return $this->redirect($frontendUrl . '/auth-callback?jwttoken=' . $encodedData);
     }
 
     #[Route('/api/v1/token/refresh', name: 'api_token_refresh', methods: ['POST'])]
