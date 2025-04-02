@@ -9,6 +9,8 @@ use HWI\Bundle\OAuthBundle\Security\Core\Authentication\Token\OAuthToken;
 use HWI\Bundle\OAuthBundle\Security\Http\ResourceOwnerMap;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Gesdinet\JWTRefreshTokenBundle\Generator\RefreshTokenGeneratorInterface;
+use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use OpenApi\Attributes as OA;
 
@@ -18,8 +20,14 @@ class OAuthController extends AbstractController
     public function __construct(
         private ParameterBagInterface $params,
         private ResourceOwnerMap $resourceOwnerMap,
-        private JWTTokenManagerInterface $jwtManager
+        private JWTTokenManagerInterface $jwtManager,
+        private RefreshTokenGeneratorInterface $refreshTokenGenerator,
+        private RefreshTokenManagerInterface $refreshTokenManager
     ) {}
+
+    private function generateTokenData($user) {
+
+    }
 
     #[Route('/login/success', name: 'login_success')]
     public function connectSuccess(): Response
@@ -42,17 +50,31 @@ class OAuthController extends AbstractController
             ];
         }
 
-        $jwt = $this->jwtManager->createFromPayload($user, $oauthData);
-
-        $encodedData = base64_encode(json_encode($oauthData));
+        $jwt = $this->jwtManager->create($user);
+    
+        $refreshToken = $this->refreshTokenGenerator->createForUserWithTtl(
+            $user, 
+            (new \DateTime('+1 month'))->getTimestamp()
+        );
+        
+        $this->refreshTokenManager->save($refreshToken);
+    
+        $responseData = [
+            'token' => $jwt,
+            'refresh_token' => $refreshToken->getRefreshToken(),
+            'oauth' => $oauthData
+        ];
+        dd($responseData, $refreshToken);
+    
+        $encodedData = base64_encode(json_encode($responseData));
 
         $frontendUrl = $this->params->get('app.frontend_url');
         
-        return $this->redirect($frontendUrl . '/auth-callback?jwttoken=' . $encodedData);
+        return $this->redirect($frontendUrl . '/auth-callback?auth_data=' . $encodedData);
     }
 
-    #[Route('/api/v1/token/refresh', name: 'api_token_refresh', methods: ['POST'])]
-    #[OA\Post(path: '/api/v1/token/refresh', description: 'Rafraîchit un access_token OAuth expiré')]
+    #[Route('/api/v1/token/refresh/oauth', name: 'api_token_refresh_oauth', methods: ['POST'])]
+    #[OA\Post(path: '/api/v1/token/refresh/oauth', description: 'Rafraîchit un access_token OAuth expiré')]
     #[OA\RequestBody(
         description: 'Paramètres pour rafraîchir le token',
         required: true,
@@ -97,9 +119,17 @@ class OAuthController extends AbstractController
     #[OA\Tag(name: 'Authentication')]
     public function refreshToken(Request $request): Response
     {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json(['error' => 'User not authenticated'], 401);
+        }
+
         $data = json_decode($request->getContent(), true);
-        $refreshToken = $data['refresh_token'] ?? null;
-        $provider = $data['provider'] ?? null;
+        if (!$data['oauth']) {
+            return $this->json(['error' => 'OAuth data is missing'], 400);
+        }
+        $refreshToken = $data['oauth']['refresh_token'] ?? null;
+        $provider = $data['oauth']['provider'] ?? null;
         
         if (!$refreshToken || !$provider) {
             return $this->json(['error' => 'Refresh token and privider are needed ;)'], 400);
@@ -119,7 +149,21 @@ class OAuthController extends AbstractController
             return $this->json(['error' => $e->getMessage()], 400);
         }
 
-        $encodedData = base64_encode(json_encode($oauthData));
+        $jwt = $this->jwtManager->create($user);
+
+        $refreshToken = $this->refreshTokenGenerator->createForUserWithTtl(
+            $user, 
+            (new \DateTime('+1 month'))->getTimestamp()
+        );
+        $this->refreshTokenManager->save($refreshToken);
+
+        $responseData = [
+            'token' => $jwt,
+            'refresh_token' => $refreshToken->getRefreshToken(),
+            'oauth' => $oauthData
+        ];
+
+        $encodedData = base64_encode(json_encode($responseData));
 
         return $this->json(['oauth_data' => $encodedData]);
     }

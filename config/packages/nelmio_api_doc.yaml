@@ -21,6 +21,42 @@ nelmio_api_doc:
         tags:
             -   name: Authentication
                 description: Endpoints pour l'authentification
+        
+        paths:
+            /api/v1/token/refresh:
+                post:
+                    tags:
+                        - Authentication
+                    summary: Rafraîchir un JWT token
+                    description: Utilise un refresh token pour obtenir un nouveau JWT token d'accès
+                    requestBody:
+                        required: true
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    properties:
+                                        refresh_token:
+                                            type: string
+                                            example: "abc123xyz456"
+                                    required:
+                                        - refresh_token
+                    responses:
+                        '200':
+                            description: Token rafraîchi avec succès
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            token:
+                                                type: string
+                                                example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                                            refresh_token:
+                                                type: string
+                                                example: "def456uvw789"
+                        '401':
+                            description: Refresh token invalide ou expiré
 
     areas:
         default:
