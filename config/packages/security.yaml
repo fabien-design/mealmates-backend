@@ -30,7 +30,11 @@ security:
         api:
             pattern: ^/api/v1
             stateless: true
+            entry_point: jwt
             jwt: ~
+            refresh_jwt:
+                check_path: /api/v1/token/refresh
+                provider: app_user_provider
             provider: app_user_provider
 
         main:
@@ -55,6 +59,7 @@ security:
         - { path: ^/api/v1/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/verify-email, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/resend-verification-email, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/(login|token/refresh), roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/doc, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1, roles: IS_AUTHENTICATED_FULLY }
 
