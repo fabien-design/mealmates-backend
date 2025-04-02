@@ -64,7 +64,6 @@ class OAuthController extends AbstractController
             'refresh_token' => $refreshToken->getRefreshToken(),
             'oauth' => $oauthData
         ];
-        dd($responseData, $refreshToken);
     
         $encodedData = base64_encode(json_encode($responseData));
 
@@ -74,7 +73,7 @@ class OAuthController extends AbstractController
     }
 
     #[Route('/api/v1/token/refresh/oauth', name: 'api_token_refresh_oauth', methods: ['POST'])]
-    #[OA\Post(path: '/api/v1/token/refresh/oauth', description: 'Rafraîchit un access_token OAuth expiré')]
+    #[OA\Post(path: '/api/v1/token/refresh/oauth', description: 'Rafraîchit un access_token OAuth expiré', summary: 'Rafraîchir un access_token OAuth')]
     #[OA\RequestBody(
         description: 'Paramètres pour rafraîchir le token',
         required: true,
@@ -90,11 +89,16 @@ class OAuthController extends AbstractController
         description: 'Token rafraîchi avec succès',
         content: new OA\JsonContent(
             properties: [
-                new OA\Property(property: 'access_token', type: 'string', description: 'Nouveau token d\'accès'),
-                new OA\Property(property: 'refresh_token', type: 'string', description: 'Nouveau refresh token (ou l\'ancien si non fourni par le provider)'),
-                new OA\Property(property: 'expires_in', type: 'integer', description: 'Durée de validité du token en secondes'),
-                new OA\Property(property: 'expires_at', type: 'string', format: 'date-time', description: 'Date d\'expiration du token'),
-                new OA\Property(property: 'provider', type: 'string', description: 'Le fournisseur OAuth utilisé')
+                new OA\Property(property: 'token', type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', description: 'Nouveau token JWT'),
+                new OA\Property(property: 'refresh_token', type: 'string', example: 'dzuhj3456FZGh09czuhz...', description: 'Nouveau refresh token'),
+                new OA\Property(property: 'oauth', type: 'object', description: 'Données OAuth',
+                    properties: [
+                        new OA\Property(property: 'access_token', type: 'string', example: 'ghu_VQtFQ...', description: 'Nouveau token d\'accès'),
+                        new OA\Property(property: 'provider', type: 'string', example: 'github', description: 'Le fournisseur OAuth utilisé'),
+                        new OA\Property(property: 'expires_at', type: 'string', example: '1743599559', description: 'Date d\'expiration du token'),
+                        new OA\Property(property: 'refresh_token', type: 'string', example: 'ghr_ndtu...', description: 'Nouveau refresh token (ou l\'ancien si non fourni par le provider)')
+                    ]
+                ),
             ]
         )
     )]
