@@ -14,116 +14,105 @@ class UserFixtures extends Fixture
     public const USERS = [
         [
             'identifier' => 'admin',
-            'email'=> 'admin@example.com',
+            'email' => 'admin@example.com',
             'roles' => ['ROLE_ADMIN', 'ROLE_USER'],
             'password' => 'admin',
             'first_name' => 'Jean',
             'last_name' => 'Dupont',
-            'isEmailValid' => true,
-            'sexe' => true // H
+            'isEmailValid' => true
         ],
         [
             'identifier' => 'alicia',
-            'email'=> 'alicia@test.com',
+            'email' => 'alicia@test.com',
             'roles' => ['ROLE_USER'],
             'password' => 'alicia',
             'first_name' => 'Alicia',
             'last_name' => 'Garcia',
-            'isEmailValid' => true,
-            'sexe' => false // F
+            'isEmailValid' => true
         ],
         [
             'identifier' => 'thomas',
-            'email'=> 'thomas.dubois@gmail.com',
+            'email' => 'thomas.dubois@gmail.com',
             'roles' => ['ROLE_USER'],
             'password' => 'thomas123',
             'first_name' => 'Thomas',
             'last_name' => 'Dubois',
-            'isEmailValid' => true,
-            'sexe' => true
+            'isEmailValid' => true
         ],
         [
             'identifier' => 'sophie',
-            'email'=> 'sophie.martin@outlook.fr',
+            'email' => 'sophie.martin@outlook.fr',
             'roles' => ['ROLE_USER'],
             'password' => 'sophie2025',
             'first_name' => 'Sophie',
             'last_name' => 'Martin',
-            'isEmailValid' => true,
-            'sexe' => false
+            'isEmailValid' => true
         ],
         [
             'identifier' => 'lucas',
-            'email'=> 'lucas.bernard@yahoo.com',
+            'email' => 'lucas.bernard@yahoo.com',
             'roles' => ['ROLE_USER'],
             'password' => 'lucasb',
             'first_name' => 'Lucas',
             'last_name' => 'Bernard',
-            'isEmailValid' => false,
-            'sexe' => true
+            'isEmailValid' => false
         ],
         [
             'identifier' => 'celine',
-            'email'=> 'celine.petit@hotmail.com',
+            'email' => 'celine.petit@hotmail.com',
             'roles' => ['ROLE_USER'],
             'password' => 'celinep',
             'first_name' => 'Céline',
             'last_name' => 'Petit',
-            'isEmailValid' => true,
-            'sexe' => false
+            'isEmailValid' => true
         ],
         [
             'identifier' => 'maxime',
-            'email'=> 'maxime.leroy@gmail.com',
+            'email' => 'maxime.leroy@gmail.com',
             'roles' => ['ROLE_USER'],
             'password' => 'max1234',
             'first_name' => 'Maxime',
             'last_name' => 'Leroy',
-            'isEmailValid' => true,
-            'sexe' => true
+            'isEmailValid' => true
         ],
         [
             'identifier' => 'julie',
-            'email'=> 'julie.moreau@free.fr',
+            'email' => 'julie.moreau@free.fr',
             'roles' => ['ROLE_USER'],
             'password' => 'julie2024',
             'first_name' => 'Julie',
             'last_name' => 'Moreau',
-            'isEmailValid' => false,
-            'sexe' => false
+            'isEmailValid' => false
         ],
         [
             'identifier' => 'nicolas',
-            'email'=> 'nicolas.durand@orange.fr',
+            'email' => 'nicolas.durand@orange.fr',
             'roles' => ['ROLE_USER'],
             'password' => 'nico75',
             'first_name' => 'Nicolas',
             'last_name' => 'Durand',
-            'isEmailValid' => true,
-            'sexe' => true
+            'isEmailValid' => true
         ],
         [
             'identifier' => 'emilie',
-            'email'=> 'emilie.lambert@laposte.net',
+            'email' => 'emilie.lambert@laposte.net',
             'roles' => ['ROLE_USER'],
             'password' => 'emilam',
             'first_name' => 'Emilie',
             'last_name' => 'Lambert',
-            'isEmailValid' => true,
-            'sexe' => false
+            'isEmailValid' => true
         ],
         [
             'identifier' => 'david',
-            'email'=> 'david.roux@sfr.fr',
+            'email' => 'david.roux@sfr.fr',
             'roles' => ['ROLE_USER'],
             'password' => 'davidr',
             'first_name' => 'David',
             'last_name' => 'Roux',
-            'isEmailValid' => true,
-            'sexe' => true
+            'isEmailValid' => true
         ],
     ];
-        
+
 
     private $passwordEncoder;
 
@@ -134,7 +123,7 @@ class UserFixtures extends Fixture
 
     public function load(ObjectManager $manager): void
     {
-        for($i = 0; $i < count(self::USERS); $i++) {
+        for ($i = 0; $i < count(self::USERS); $i++) {
             $user = new User();
             $user->setEmail(self::USERS[$i]['email']);
             $user->setRoles(self::USERS[$i]['roles']);
@@ -142,7 +131,6 @@ class UserFixtures extends Fixture
             $user->setFirstName(self::USERS[$i]['first_name']);
             $user->setLastName(self::USERS[$i]['last_name']);
             $user->setIsVerified(self::USERS[$i]['isEmailValid']);
-            $user->setSexe(self::USERS[$i]['sexe']);
             $this->addReference(self::REFERENCE_IDENTIFIER . self::USERS[$i]['identifier'], $user);
 
             $manager->persist($user);

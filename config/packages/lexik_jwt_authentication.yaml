@@ -1,4 +1,64 @@
 lexik_jwt_authentication:
-    secret_key: '%env(resolve:JWT_SECRET_KEY)%'
-    public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
-    pass_phrase: '%env(JWT_PASSPHRASE)%'
+  secret_key: "%env(resolve:JWT_SECRET_KEY)%"
+  public_key: "%env(resolve:JWT_PUBLIC_KEY)%"
+  pass_phrase: "%env(JWT_PASSPHRASE)%"
+  token_ttl: 3600 # token TTL in seconds, defaults to 1 hour
+  clock_skew: 0
+  allow_no_expiration: false # set to true to allow tokens without exp claim
+
+  # token extraction settings
+  token_extractors:
+    # look for a token as Authorization Header
+    authorization_header:
+      enabled: false
+      prefix: Bearer
+      name: Authorization
+
+    # check token in a cookie
+    cookie:
+      enabled: true
+      name: jwt_token
+
+    # check token in query string parameter
+    query_parameter:
+      enabled: false
+      name: bearer
+
+    # check token in a cookie
+    split_cookie:
+      enabled: false
+      cookies:
+        - jwt_token
+
+  set_cookies:
+    jwt_token:
+      lifetime: null
+      samesite: lax
+      path: /
+      domain: null
+      httpOnly: true
+      partitioned: false # Only for Symfony 6.4 or higher
+
+    refresh_token:
+      lifetime: 30
+      samesite: lax
+      path: /
+      domain: null
+      httpOnly: true
+      partitioned: false
+    # jwt_s:
+    #   lifetime: 0
+    #   samesite: lax
+    #   path: /
+    #   domain: null
+    #   httpOnly: true
+    #   partitioned: false # Only for Symfony 6.4 or higher
+    #   split:
+    #     - signature
+  # remove the token from the response body when using cookies
+  remove_token_from_body_when_cookies_used: true
+
+  # invalidate the token on logout by storing it in the cache
+  blocklist_token:
+    enabled: true
+    cache: cache.app

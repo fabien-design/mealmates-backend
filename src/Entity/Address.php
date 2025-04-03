@@ -58,7 +58,6 @@ class Address
      * @var Collection<int, User>
      */
     #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'address')]
-    #[Groups(['address:read'])]
     private Collection $id_user;
 
     public function __construct()
