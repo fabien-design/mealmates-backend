@@ -33,7 +33,6 @@ class OAuthController extends AbstractController
 
     }
 
-    // src/Controller/OAuthController.php
     #[Route('/login/success', name: 'login_success')]
     public function connectSuccess(Request $request): Response
     {
@@ -55,24 +54,19 @@ class OAuthController extends AbstractController
             ];
         }
 
-        // Générer le JWT token
         $jwt = $this->jwtManager->create($user);
 
-        // Générer le refresh token
         $refreshToken = $this->refreshTokenGenerator->createForUserWithTtl(
             $user,
             (new \DateTime('+1 month'))->getTimestamp()
         );
 
-        // Persister le refresh token
         $this->refreshTokenManager->save($refreshToken);
 
-        // Créer la réponse de redirection
         $frontendUrl = $this->params->get('app.frontend_url');
         $response = new RedirectResponse($frontendUrl . '/app/discover');
 
-        // Calculer le timestamp d'expiration pour les cookies
-        $jwtExpiry = new \DateTime('+1 hour');  // Durée typique d'un JWT
+        $jwtExpiry = new \DateTime('+1 hour');
         $refreshExpiry = new \DateTime('+1 month');
 
         // Définir les cookies HTTP-only
@@ -104,7 +98,6 @@ class OAuthController extends AbstractController
             )
         );
 
-        // Stocker les données OAuth si nécessaire
         if (!empty($oauthData)) {
             $response->headers->setCookie(
                 new Cookie(
