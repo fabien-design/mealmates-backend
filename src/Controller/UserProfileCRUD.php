@@ -38,6 +38,38 @@ class UserProfileCRUD extends AbstractController
     ) {
     }
 
+    #[Route('/me', name: 'api_profile_me', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Response(
+        response: 200,
+        description: 'Retourne success si l\'utilisateur est connecté',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'success', type: 'boolean', example: true)
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Accès refusé si l\'utilisateur n\'est pas connecté',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'message', type: 'string', example: 'JWT Token not found')
+            ]
+        )
+    )]
+    public function me(): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            throw new AccessDeniedHttpException('Vous devez être connecté pour accéder à cette ressource.');
+        }
+
+        return $this->json(["success" => true], Response::HTTP_OK, []);
+    }
+
     #[Route('', name: 'api_profile_show', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     #[OA\Response(
