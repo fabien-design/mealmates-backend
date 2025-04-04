@@ -107,7 +107,6 @@ class UserProfileCRUD extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
-        // Mise à jour des informations de base de l'utilisateur
         if (isset($data['firstName'])) {
             $user->setFirstName($data['firstName']);
         }
@@ -116,13 +115,7 @@ class UserProfileCRUD extends AbstractController
             $user->setLastName($data['lastName']);
         }
 
-        if (isset($data['sexe'])) {
-            $user->setSexe($data['sexe']);
-        }
-
-        // Mise à jour des adresses
         if (isset($data['addresses']) && is_array($data['addresses'])) {
-            // Suppression des adresses existantes si elles ne sont pas dans la nouvelle liste
             $existingAddresses = [];
             foreach ($user->getAddress() as $existingAddress) {
                 $existingAddresses[$existingAddress->getId()] = $existingAddress;
@@ -130,7 +123,6 @@ class UserProfileCRUD extends AbstractController
 
             foreach ($data['addresses'] as $addressData) {
                 if (isset($addressData['id']) && $addressData['id']) {
-                    // Mise à jour d'une adresse existante
                     $address = $addressRepository->find($addressData['id']);
 
                     if ($address && $address->getIdUser()->contains($user)) {
@@ -139,11 +131,9 @@ class UserProfileCRUD extends AbstractController
                         $address->setZipCode($addressData['zipCode'] ?? $address->getZipCode());
                         $address->setRegion($addressData['region'] ?? $address->getRegion());
 
-                        // Retirer de la liste des adresses à supprimer
                         unset($existingAddresses[$address->getId()]);
                     }
                 } else {
-                    // Création d'une nouvelle adresse
                     $address = new Address();
                     $address->setAddress($addressData['address']);
                     $address->setCity($addressData['city']);
@@ -157,7 +147,6 @@ class UserProfileCRUD extends AbstractController
                 }
             }
 
-            // Suppression des adresses qui ne sont plus dans la liste
             foreach ($existingAddresses as $addressToRemove) {
                 $user->removeAddress($addressToRemove);
                 $addressToRemove->removeIdUser($user);
@@ -168,14 +157,11 @@ class UserProfileCRUD extends AbstractController
             }
         }
 
-        // Mise à jour des allergènes
         if (isset($data['allergenIds']) && is_array($data['allergenIds'])) {
-            // Supprimer tous les allergènes existants
             foreach ($user->getAllergen() as $allergen) {
                 $user->removeAllergen($allergen);
             }
 
-            // Ajouter les nouveaux allergènes
             foreach ($data['allergenIds'] as $allergenId) {
                 $allergen = $allergenRepository->find($allergenId);
                 if ($allergen) {
@@ -184,14 +170,11 @@ class UserProfileCRUD extends AbstractController
             }
         }
 
-        // Mise à jour des préférences alimentaires
         if (isset($data['foodPreferenceIds']) && is_array($data['foodPreferenceIds'])) {
-            // Supprimer toutes les préférences existantes
             foreach ($user->getFoodPreference() as $preference) {
                 $user->removeFoodPreference($preference);
             }
 
-            // Ajouter les nouvelles préférences
             foreach ($data['foodPreferenceIds'] as $preferenceId) {
                 $preference = $foodPreferenceRepository->find($preferenceId);
                 if ($preference) {
@@ -200,7 +183,6 @@ class UserProfileCRUD extends AbstractController
             }
         }
 
-        // Validation de l'entité utilisateur
         $errors = $this->validator->validate($user);
         if (count($errors) > 0) {
             $errorMessages = [];

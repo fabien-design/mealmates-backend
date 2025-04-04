@@ -49,7 +49,6 @@ security:
                 default_target_path: /login/success
                 oauth_user_provider:
                     service: App\Security\OAuthUserProvider
-
                 provider: hwi_provider
 
     # Easy way to control access for large sections of your site
