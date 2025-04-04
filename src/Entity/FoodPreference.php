@@ -34,9 +34,16 @@ class FoodPreference
     #[Groups(['food_preference:read'])]
     private Collection $user_foodPreference;
 
+    /**
+     * @var Collection<int, Offer>
+     */
+    #[ORM\ManyToMany(targetEntity: Offer::class, mappedBy: 'food_preferences')]
+    private Collection $offers;
+
     public function __construct()
     {
         $this->user_foodPreference = new ArrayCollection();
+        $this->offers = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -78,6 +85,33 @@ class FoodPreference
     {
         if ($this->user_foodPreference->removeElement($userFoodPreference)) {
             $userFoodPreference->removeFoodPreference($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Offer>
+     */
+    public function getOffer(): Collection
+    {
+        return $this->offers;
+    }
+
+    public function addOffer(Offer $offer): static
+    {
+        if (!$this->offers->contains($offer)) {
+            $this->offers->add($offer);
+            $offer->addFoodPreference($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOffer(Offer $offer): static
+    {
+        if ($this->offers->removeElement($offer)) {
+            $offer->removeFoodPreference($this);
         }
 
         return $this;

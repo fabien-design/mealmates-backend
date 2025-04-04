@@ -2,22 +2,22 @@
 
 namespace App\Repository;
 
-use App\Entity\Offers;
+use App\Entity\Offer;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<Offers>
+ * @extends ServiceEntityRepository<Offer>
  */
-class OffersRepository extends ServiceEntityRepository
+class OfferRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Offers::class);
+        parent::__construct($registry, Offer::class);
     }
 
     //    /**
-    //     * @return Offers[] Returns an array of Offers objects
+    //     * @return Offer[] Returns an array of Offer objects
     //     */
     //    public function findByExampleField($value): array
     //    {
@@ -31,7 +31,7 @@ class OffersRepository extends ServiceEntityRepository
     //        ;
     //    }
 
-    //    public function findOneBySomeField($value): ?Offers
+    //    public function findOneBySomeField($value): ?Offer
     //    {
     //        return $this->createQueryBuilder('o')
     //            ->andWhere('o.exampleField = :val')
