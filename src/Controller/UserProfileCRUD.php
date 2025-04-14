@@ -100,6 +100,7 @@ class UserProfileCRUD extends AbstractController
             properties: [
                 new OA\Property(property: 'firstName', type: 'string', example: 'John'),
                 new OA\Property(property: 'lastName', type: 'string', example: 'Doe'),
+                new OA\Property(property: 'email', type: 'string', example: 'john.doe@example.com'),
                 new OA\Property(property: 'sexe', type: 'boolean', example: true),
                 new OA\Property(property: 'addresses', type: 'array', items: new OA\Items(
                     properties: [
@@ -145,6 +146,10 @@ class UserProfileCRUD extends AbstractController
 
         if (isset($data['lastName'])) {
             $user->setLastName($data['lastName']);
+        }
+
+        if (isset($data['email'])) {
+            $user->setEmail($data['email']);
         }
 
         if (isset($data['addresses']) && is_array($data['addresses'])) {
