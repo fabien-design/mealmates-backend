@@ -75,33 +75,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     )]
     private ?string $password = null;
 
-    #[ORM\Column(length: 50, nullable: true)]
+    #[ORM\Column(length: 50, nullable: false)]
     #[Groups(['user:read', 'user:write', 'user:profile'])]
-    #[Assert\When(
-        expression: 'this.getLastName() != null',
-        constraints: [
-            new Assert\Length(
-                min: 2,
-                max: 50,
-                minMessage: "Le nom doit contenir au moins {{ limit }} caractères",
-                maxMessage: "Le nom ne peut pas dépasser {{ limit }} caractères"
-            )
-        ]
+    #[Assert\NotBlank(message: "Le nom ne peut pas être vide")]
+    #[Assert\Length(
+        min: 2,
+        max: 50,
+        minMessage: "Le nom doit contenir au moins {{ limit }} caractères",
+        maxMessage: "Le nom ne peut pas dépasser {{ limit }} caractères"
     )]
     private ?string $last_name = null;
 
-    #[ORM\Column(length: 50, nullable: true)]
+    #[ORM\Column(length: 50, nullable: false)]
     #[Groups(['user:read', 'user:write', 'user:profile'])]
-    #[Assert\When(
-        expression: 'this.getLastName() != null',
-        constraints: [
-            new Assert\Length(
-                min: 2,
-                max: 50,
-                minMessage: "Le prénom doit contenir au moins {{ limit }} caractères",
-                maxMessage: "Le prénom ne peut pas dépasser {{ limit }} caractères"
-            )
-        ]
+    #[Assert\NotBlank(message: "Le prénom ne peut pas être vide")]
+    #[Assert\Length(
+        min: 2,
+        max: 50,
+        minMessage: "Le prénom doit contenir au moins {{ limit }} caractères",
+        maxMessage: "Le prénom ne peut pas dépasser {{ limit }} caractères"
     )]
     private ?string $first_name = null;
 
