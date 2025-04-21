@@ -146,29 +146,31 @@ class UserProfileCRUD extends AbstractController
             'groups' => ['user:write']
         ]);
         
-        // foreach ($user->getAddress() as $existingAddress) {
-        //     $user->removeAddress($existingAddress);
-        //     $existingAddress->removeIdUser($user);
+        foreach ($user->getAddress() as $existingAddress) {
+            $user->removeAddress($existingAddress);
+            $existingAddress->removeIdUser($user);
             
-        //     if ($existingAddress->getIdUser()->isEmpty()) {
-        //         $this->em->remove($existingAddress);
-        //     }
-        // }
+            if ($existingAddress->getIdUser()->isEmpty()) {
+                $this->em->remove($existingAddress);
+            }
+        }
         
-        // if (isset($data['addresses']) && is_array($data['addresses'])) {
-        //     foreach ($data['addresses'] as $addressData) {
-        //         $address = new Address();
-        //         $address->setAddress($addressData['address'] ?? null);
-        //         $address->setCity($addressData['city'] ?? null);
-        //         $address->setZipCode($addressData['zipCode'] ?? null);
-        //         $address->setRegion($addressData['region'] ?? null);
+        if (isset($data['address']) && is_array($data['address'])) {
+            foreach ($data['address'] as $addressData) {
+                $address = new Address();
+                $address->setAddress($addressData['address'] ?? null);
+                $address->setCity($addressData['city'] ?? null);
+                $address->setZipCode($addressData['zipCode'] ?? null);
+                $address->setRegion($addressData['region'] ?? null);
+                $address->setLatitude($addressData['latitude'] ?? null);
+                $address->setLongitude($addressData['longitude'] ?? null);
+
+                $address->addIdUser($user);
+                $user->addAddress($address);
                 
-        //         $address->addIdUser($user);
-        //         $user->addAddress($address);
-                
-        //         $this->em->persist($address);
-        //     }
-        // }
+                $this->em->persist($address);
+            }
+        }
         
         // foreach ($user->getAllergen() as $allergen) {
         //     $user->removeAllergen($allergen);
