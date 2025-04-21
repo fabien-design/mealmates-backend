@@ -15,11 +15,11 @@ class FoodPreference
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['food_preference:read', 'user:read', 'user:profile'])]
+    #[Groups(['food_preference:read', 'user:read', 'user:profile', 'offer:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['food_preference:read', 'food_preference:write', 'user:read', 'user:profile'])]
+    #[Groups(['food_preference:read', 'food_preference:write', 'user:read', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 50,

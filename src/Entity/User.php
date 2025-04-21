@@ -76,7 +76,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['user:read', 'user:write', 'user:profile'])]
+    #[Groups(['user:read', 'user:write', 'user:profile', 'offer:read'])]
     #[Assert\When(
         expression: 'this.getLastName() != null',
         constraints: [
@@ -91,7 +91,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $last_name = null;
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['user:read', 'user:write', 'user:profile'])]
+    #[Groups(['user:read', 'user:write', 'user:profile', 'offer:read'])]
     #[Assert\When(
         expression: 'this.getLastName() != null',
         constraints: [

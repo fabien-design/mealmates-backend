@@ -15,11 +15,11 @@ class Address
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['address:read', 'user:read', 'user:profile'])]
+    #[Groups(['address:read', 'user:read', 'user:profile', 'offer:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile'])]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 50,
@@ -28,7 +28,7 @@ class Address
     private ?string $city = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile'])]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 50,
@@ -37,7 +37,7 @@ class Address
     private ?string $zipCode = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile'])]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 100,
@@ -46,7 +46,7 @@ class Address
     private ?string $address = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile'])]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 50,
@@ -67,9 +67,31 @@ class Address
     private Collection $offers;
 
     #[ORM\Column]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile', 'offer:read'])]
+    #[Assert\NotBlank]
+    #[Assert\Range(
+        min: -180,
+        max: 180,
+        notInRangeMessage: 'The longitude must be between {{ min }} and {{ max }}',
+    )]
+    #[Assert\Type(
+        type: 'float',
+        message: 'The longitude must be a valid float number',
+    )]
     private ?float $longitude = null;
 
     #[ORM\Column]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile', 'offer:read'])]
+    #[Assert\NotBlank]
+    #[Assert\Range(
+        min: -90,
+        max: 90,
+        notInRangeMessage: 'The latitude must be between {{ min }} and {{ max }}',
+    )]
+    #[Assert\Type(
+        type: 'float',
+        message: 'The latitude must be a valid float number',
+    )]
     private ?float $latitude = null;
 
     public function __construct()

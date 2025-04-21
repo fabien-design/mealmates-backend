@@ -15,11 +15,11 @@ class Allergen
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['allergen:read', 'user:read', 'user:profile'])]
+    #[Groups(['allergen:read', 'user:read', 'user:profile', 'offer:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['allergen:read', 'allergen:write', 'user:read', 'user:profile'])]
+    #[Groups(['allergen:read', 'allergen:write', 'user:read', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 50,

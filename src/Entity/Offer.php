@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: OfferRepository::class)]
 class Offer
@@ -14,59 +15,74 @@ class Offer
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups('offer:read')]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups('offer:read')]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups('offer:read')]
     private ?string $description = null;
 
     #[ORM\Column]
+    #[Groups('offer:read')]
     private ?int $quantity = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
+    #[Groups('offer:read')]
     private ?\DateTimeInterface $expiryDate = null;
 
     #[ORM\Column]
+    #[Groups('offer:read')]
     private ?float $price = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups('offer:read')]
     private ?float $dynamicPrice = null;
 
     #[ORM\Column]
+    #[Groups('offer:read')]
     private ?bool $hasBeenSold = null;
 
     /**
      * @var Collection<int, Allergen>
      */
     #[ORM\ManyToMany(targetEntity: Allergen::class, inversedBy: 'offers')]
+    #[Groups('offer:read')]
     private Collection $allergens;
 
     /**
      * @var Collection<int, FoodPreference>
      */
     #[ORM\ManyToMany(targetEntity: FoodPreference::class, inversedBy: 'offers')]
+    #[Groups('offer:read')]
     private Collection $food_preferences;
 
     #[ORM\ManyToOne(inversedBy: 'offers')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups('offer:read')]
     private ?User $seller = null;
 
     #[ORM\ManyToOne(inversedBy: 'orders')]
+    #[Groups('offer:read')]
     private ?User $buyer = null;
 
     #[ORM\Column]
+    #[Groups('offer:read')]
     private ?bool $isRecurring = null;
 
     /**
      * @var Collection<int, Image>
      */
     #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'offer', orphanRemoval: true)]
+    #[Groups('offer:read')]
     private Collection $images;
 
     #[ORM\ManyToOne(inversedBy: 'offers')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups('offer:read')]
     private ?Address $address = null;
 
     public function __construct()

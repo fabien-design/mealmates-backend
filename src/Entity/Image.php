@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\ImageRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 #[ORM\Entity(repositoryClass: ImageRepository::class)]
@@ -14,12 +15,14 @@ class Image
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['offer:read'])]
     private ?int $id = null;
 
     #[Vich\UploadableField(mapping: 'files', fileNameProperty: 'name', size: 'size')]
     private ?File $file = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['offer:read'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255, nullable: true)]
