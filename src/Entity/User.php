@@ -24,7 +24,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
-    #[Groups(['user:read', 'user:write', 'allergen:read', 'food_preference:read'])]
+    #[Groups(['user:read', 'allergen:read', 'food_preference:read'])]
     #[Assert\NotBlank]
     #[Assert\Email(
         message: 'The email {{ value }} is not a valid email.',
@@ -39,7 +39,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @var list<string> The user roles
      */
     #[ORM\Column]
-    #[Groups(['user:read', 'user:write', 'admin:read'])]
+    #[Groups(['user:read', 'admin:read'])]
     private array $roles = [];
 
     /**
@@ -75,8 +75,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     )]
     private ?string $password = null;
 
-    #[ORM\Column(length: 50, nullable: false)]
-    #[Groups(['user:read', 'user:write', 'user:profile'])]
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['user:read', 'user:write', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank(message: "Le nom ne peut pas être vide")]
     #[Assert\Length(
         min: 2,
@@ -87,7 +87,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $last_name = null;
 
     #[ORM\Column(length: 50, nullable: false)]
-    #[Groups(['user:read', 'user:write', 'user:profile'])]
+    #[Groups(['user:read', 'user:write', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank(message: "Le prénom ne peut pas être vide")]
     #[Assert\Length(
         min: 2,
@@ -131,11 +131,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'admin:read'])]
     private bool $isVerified = false;
 
+    /**
+     * @var Collection<int, Offer>
+     */
+    #[ORM\OneToMany(targetEntity: Offer::class, mappedBy: 'seller')]
+    private Collection $offers;
+
+    /**
+     * @var Collection<int, Offer>
+     */
+    #[ORM\OneToMany(targetEntity: Offer::class, mappedBy: 'buyer')]
+    private Collection $orders;
+
     public function __construct()
     {
         $this->address = new ArrayCollection();
         $this->allergen = new ArrayCollection();
         $this->food_preferences = new ArrayCollection();
+        $this->offers = new ArrayCollection();
+        $this->orders = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -356,6 +370,66 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsVerified(bool $isVerified): static
     {
         $this->isVerified = $isVerified;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Offer>
+     */
+    public function getOffers(): Collection
+    {
+        return $this->offers;
+    }
+
+    public function addOffer(Offer $offer): static
+    {
+        if (!$this->offers->contains($offer)) {
+            $this->offers->add($offer);
+            $offer->setSeller($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOffer(Offer $offer): static
+    {
+        if ($this->offers->removeElement($offer)) {
+            // set the owning side to null (unless already changed)
+            if ($offer->getSeller() === $this) {
+                $offer->setSeller(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Offer>
+     */
+    public function getOrders(): Collection
+    {
+        return $this->orders;
+    }
+
+    public function addOrder(Offer $order): static
+    {
+        if (!$this->orders->contains($order)) {
+            $this->orders->add($order);
+            $order->setBuyer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOrder(Offer $order): static
+    {
+        if ($this->orders->removeElement($order)) {
+            // set the owning side to null (unless already changed)
+            if ($order->getBuyer() === $this) {
+                $order->setBuyer(null);
+            }
+        }
 
         return $this;
     }

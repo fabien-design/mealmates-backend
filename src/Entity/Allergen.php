@@ -15,11 +15,11 @@ class Allergen
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['allergen:read', 'user:read', 'user:profile'])]
+    #[Groups(['allergen:read', 'user:read', 'user:profile', 'offer:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['allergen:read', 'allergen:write', 'user:read', 'user:profile'])]
+    #[Groups(['allergen:read', 'allergen:write', 'user:read', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 50,
@@ -34,9 +34,16 @@ class Allergen
     #[Groups(['allergen:read'])]
     private Collection $User_allergen;
 
+    /**
+     * @var Collection<int, Offer>
+     */
+    #[ORM\ManyToMany(targetEntity: Offer::class, mappedBy: 'allergens')]
+    private Collection $offers;
+
     public function __construct()
     {
         $this->User_allergen = new ArrayCollection();
+        $this->offers = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -78,6 +85,33 @@ class Allergen
     {
         if ($this->User_allergen->removeElement($userAllergen)) {
             $userAllergen->removeAllergen($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Offer>
+     */
+    public function getOffer(): Collection
+    {
+        return $this->offers;
+    }
+
+    public function addOffer(Offer $offer): static
+    {
+        if (!$this->offers->contains($offer)) {
+            $this->offers->add($offer);
+            $offer->addAllergen($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOffer(Offer $offer): static
+    {
+        if ($this->offers->removeElement($offer)) {
+            $offer->removeAllergen($this);
         }
 
         return $this;
