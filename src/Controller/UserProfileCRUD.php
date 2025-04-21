@@ -96,7 +96,8 @@ class UserProfileCRUD extends AbstractController
         Request $request,
         AllergenRepository $allergenRepository,
         FoodPreferenceRepository $foodPreferenceRepository,
-        AddressRepository $addressRepository
+        AddressRepository $addressRepository,
+        SerializerInterface $serializer
     ): JsonResponse {
         /** @var User $user */
         $user = $this->getUser();
@@ -105,99 +106,79 @@ class UserProfileCRUD extends AbstractController
             throw new AccessDeniedHttpException('Vous devez être connecté pour accéder à cette ressource.');
         }
 
-        $data = json_decode($request->getContent(), true);
+        $content = $request->getContent();
+        $data = json_decode($content, true);
 
-        if (isset($data['firstName'])) {
-            $user->setFirstName($data['firstName']);
-        }
-
-        if (isset($data['lastName'])) {
-            $user->setLastName($data['lastName']);
-        }
-
-        if (isset($data['addresses']) && is_array($data['addresses'])) {
-            $existingAddresses = [];
-            foreach ($user->getAddress() as $existingAddress) {
-                $existingAddresses[$existingAddress->getId()] = $existingAddress;
-            }
-
-            foreach ($data['addresses'] as $addressData) {
-                if (isset($addressData['id']) && $addressData['id']) {
-                    $address = $addressRepository->find($addressData['id']);
-
-                    if ($address && $address->getIdUser()->contains($user)) {
-                        $address->setAddress($addressData['address'] ?? $address->getAddress());
-                        $address->setCity($addressData['city'] ?? $address->getCity());
-                        $address->setZipCode($addressData['zipCode'] ?? $address->getZipCode());
-                        $address->setRegion($addressData['region'] ?? $address->getRegion());
-
-                        unset($existingAddresses[$address->getId()]);
-                    }
-                } else {
-                    $address = new Address();
-                    $address->setAddress($addressData['address']);
-                    $address->setCity($addressData['city']);
-                    $address->setZipCode($addressData['zipCode']);
-                    $address->setRegion($addressData['region']);
-
-                    $address->addIdUser($user);
-                    $user->addAddress($address);
-
-                    $this->em->persist($address);
-                }
-            }
-
-            foreach ($existingAddresses as $addressToRemove) {
-                $user->removeAddress($addressToRemove);
-                $addressToRemove->removeIdUser($user);
-
-                if ($addressToRemove->getIdUser()->isEmpty()) {
-                    $this->em->remove($addressToRemove);
-                }
-            }
-        }
-
-        if (isset($data['allergenIds']) && is_array($data['allergenIds'])) {
-            foreach ($user->getAllergen() as $allergen) {
-                $user->removeAllergen($allergen);
-            }
-
-            foreach ($data['allergenIds'] as $allergenId) {
-                $allergen = $allergenRepository->find($allergenId);
-                if ($allergen) {
-                    $user->addAllergen($allergen);
-                }
-            }
-        }
-
-        if (isset($data['foodPreferenceIds']) && is_array($data['foodPreferenceIds'])) {
-            foreach ($user->getFoodPreference() as $preference) {
-                $user->removeFoodPreference($preference);
-            }
-
-            foreach ($data['foodPreferenceIds'] as $preferenceId) {
-                $preference = $foodPreferenceRepository->find($preferenceId);
-                if ($preference) {
-                    $user->addFoodPreference($preference);
-                }
-            }
-        }
-
+        $serializer->deserialize($content, User::class, 'json', [
+            'object_to_populate' => $user,
+            'groups' => ['user:write']
+        ]);
+        
+        // foreach ($user->getAddress() as $existingAddress) {
+        //     $user->removeAddress($existingAddress);
+        //     $existingAddress->removeIdUser($user);
+            
+        //     if ($existingAddress->getIdUser()->isEmpty()) {
+        //         $this->em->remove($existingAddress);
+        //     }
+        // }
+        
+        // if (isset($data['addresses']) && is_array($data['addresses'])) {
+        //     foreach ($data['addresses'] as $addressData) {
+        //         $address = new Address();
+        //         $address->setAddress($addressData['address'] ?? null);
+        //         $address->setCity($addressData['city'] ?? null);
+        //         $address->setZipCode($addressData['zipCode'] ?? null);
+        //         $address->setRegion($addressData['region'] ?? null);
+                
+        //         $address->addIdUser($user);
+        //         $user->addAddress($address);
+                
+        //         $this->em->persist($address);
+        //     }
+        // }
+        
+        // foreach ($user->getAllergen() as $allergen) {
+        //     $user->removeAllergen($allergen);
+        // }
+        
+        // if (isset($data['allergenIds']) && is_array($data['allergenIds'])) {
+        //     foreach ($data['allergenIds'] as $allergenId) {
+        //         $allergen = $allergenRepository->find($allergenId);
+        //         if ($allergen) {
+        //             $user->addAllergen($allergen);
+        //         }
+        //     }
+        // }
+        
+        // foreach ($user->getFoodPreference() as $preference) {
+        //     $user->removeFoodPreference($preference);
+        // }
+        
+        // if (isset($data['foodPreferenceIds']) && is_array($data['foodPreferenceIds'])) {
+        //     foreach ($data['foodPreferenceIds'] as $preferenceId) {
+        //         $preference = $foodPreferenceRepository->find($preferenceId);
+        //         if ($preference) {
+        //             $user->addFoodPreference($preference);
+        //         }
+        //     }
+        // }
+        
         $errors = $this->validator->validate($user);
         if (count($errors) > 0) {
             $errorMessages = [];
             foreach ($errors as $error) {
                 $errorMessages[$error->getPropertyPath()] = $error->getMessage();
             }
-
+            
             return $this->json([
                 'success' => false,
                 'errors' => $errorMessages
             ], Response::HTTP_BAD_REQUEST);
         }
-
+        
         $this->em->flush();
-
+        
         return $this->json([
             'success' => true,
             'message' => 'Profil mis à jour avec succès',

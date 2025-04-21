@@ -121,17 +121,17 @@ class OfferRepository extends ServiceEntityRepository
     private function calculateDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
     {
         $earthRadius = 6371000; // Rayon de la Terre en mètres
-        
+
         // Conversion en radians
         $latRad1 = deg2rad($lat1);
         $lonRad1 = deg2rad($lon1);
         $latRad2 = deg2rad($lat2);
         $lonRad2 = deg2rad($lon2);
-        
+
         // Différence de latitude et longitude
         $latDiff = $latRad2 - $latRad1;
         $lonDiff = $lonRad2 - $lonRad1;
-        
+
         // Formule de Haversine
         $a = sin($latDiff / 2) * sin($latDiff / 2) + 
              cos($latRad1) * cos($latRad2) * 
