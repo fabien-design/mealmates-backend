@@ -65,6 +65,10 @@ class Offer
     #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'offer', orphanRemoval: true)]
     private Collection $images;
 
+    #[ORM\ManyToOne(inversedBy: 'offers')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Address $address = null;
+
     public function __construct()
     {
         $this->allergens = new ArrayCollection();
@@ -271,6 +275,18 @@ class Offer
                 $image->setOffer(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getAddress(): ?Address
+    {
+        return $this->address;
+    }
+
+    public function setAddress(?Address $address): static
+    {
+        $this->address = $address;
 
         return $this;
     }
