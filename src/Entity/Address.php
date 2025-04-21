@@ -15,11 +15,11 @@ class Address
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['address:read', 'user:read', 'user:profile'])]
+    #[Groups(['address:read', 'user:read', 'user:profile', 'offer:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile'])]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 50,
@@ -28,7 +28,7 @@ class Address
     private ?string $city = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile'])]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 50,
@@ -37,7 +37,7 @@ class Address
     private ?string $zipCode = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile'])]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 100,
@@ -46,7 +46,7 @@ class Address
     private ?string $address = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile'])]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile', 'offer:read'])]
     #[Assert\NotBlank]
     #[Assert\Length(
         max: 50,
@@ -60,9 +60,44 @@ class Address
     #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'address')]
     private Collection $id_user;
 
+    /**
+     * @var Collection<int, Offer>
+     */
+    #[ORM\OneToMany(targetEntity: Offer::class, mappedBy: 'address')]
+    private Collection $offers;
+
+    #[ORM\Column]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile', 'offer:read'])]
+    #[Assert\NotBlank]
+    #[Assert\Range(
+        min: -180,
+        max: 180,
+        notInRangeMessage: 'The longitude must be between {{ min }} and {{ max }}',
+    )]
+    #[Assert\Type(
+        type: 'float',
+        message: 'The longitude must be a valid float number',
+    )]
+    private ?float $longitude = null;
+
+    #[ORM\Column]
+    #[Groups(['address:read', 'address:write', 'user:read', 'user:profile', 'offer:read'])]
+    #[Assert\NotBlank]
+    #[Assert\Range(
+        min: -90,
+        max: 90,
+        notInRangeMessage: 'The latitude must be between {{ min }} and {{ max }}',
+    )]
+    #[Assert\Type(
+        type: 'float',
+        message: 'The latitude must be a valid float number',
+    )]
+    private ?float $latitude = null;
+
     public function __construct()
     {
         $this->id_user = new ArrayCollection();
+        $this->offers = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -138,6 +173,60 @@ class Address
     public function removeIdUser(User $idUser): static
     {
         $this->id_user->removeElement($idUser);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Offer>
+     */
+    public function getOffers(): Collection
+    {
+        return $this->offers;
+    }
+
+    public function addOffer(Offer $offer): static
+    {
+        if (!$this->offers->contains($offer)) {
+            $this->offers->add($offer);
+            $offer->setAddress($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOffer(Offer $offer): static
+    {
+        if ($this->offers->removeElement($offer)) {
+            // set the owning side to null (unless already changed)
+            if ($offer->getAddress() === $this) {
+                $offer->setAddress(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getLongitude(): ?float
+    {
+        return $this->longitude;
+    }
+
+    public function setLongitude(float $longitude): static
+    {
+        $this->longitude = $longitude;
+
+        return $this;
+    }
+
+    public function getLatitude(): ?float
+    {
+        return $this->latitude;
+    }
+
+    public function setLatitude(float $latitude): static
+    {
+        $this->latitude = $latitude;
 
         return $this;
     }

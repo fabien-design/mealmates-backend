@@ -2,6 +2,7 @@
 namespace App\Security;
 
 use App\Entity\User;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use HWI\Bundle\OAuthBundle\OAuth\Response\UserResponseInterface;
 use HWI\Bundle\OAuthBundle\Security\Core\User\OAuthAwareUserProviderInterface;
@@ -9,11 +10,11 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 class OAuthUserProvider implements OAuthAwareUserProviderInterface
 {
-    private $em;
-
-    public function __construct(EntityManagerInterface $em)
+    public function __construct(
+        private EntityManagerInterface $em,
+        private UserRepository $userRepository
+    )
     {
-        $this->em = $em;
     }
 
     public function loadUserByOAuthUserResponse(UserResponseInterface $response)
@@ -23,10 +24,10 @@ class OAuthUserProvider implements OAuthAwareUserProviderInterface
         $email = $response->getEmail();
 
         $property = $resourceOwnerName . 'Id';
-        $user = $this->em->getRepository(User::class)->findOneBy([$property => $resourceOwnerId]);
+        $user = $this->userRepository->findOneBy([$property => $resourceOwnerId]);
 
         if (!$user && $email) {
-            $user = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
+            $user = $this->userRepository->findOneBy(['email' => $email]);
         }
 
         if (!$user) {

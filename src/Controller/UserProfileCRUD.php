@@ -38,6 +38,38 @@ class UserProfileCRUD extends AbstractController
     ) {
     }
 
+    #[Route('/me', name: 'api_profile_me', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Response(
+        response: 200,
+        description: 'Retourne success si l\'utilisateur est connecté',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'success', type: 'boolean', example: true)
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Accès refusé si l\'utilisateur n\'est pas connecté',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'message', type: 'string', example: 'JWT Token not found')
+            ]
+        )
+    )]
+    public function me(): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            throw new AccessDeniedHttpException('Vous devez être connecté pour accéder à cette ressource.');
+        }
+
+        return $this->json(["success" => true], Response::HTTP_OK, []);
+    }
+
     #[Route('', name: 'api_profile_show', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     #[OA\Response(
@@ -96,7 +128,8 @@ class UserProfileCRUD extends AbstractController
         Request $request,
         AllergenRepository $allergenRepository,
         FoodPreferenceRepository $foodPreferenceRepository,
-        AddressRepository $addressRepository
+        AddressRepository $addressRepository,
+        SerializerInterface $serializer
     ): JsonResponse {
         /** @var User $user */
         $user = $this->getUser();
@@ -105,102 +138,66 @@ class UserProfileCRUD extends AbstractController
             throw new AccessDeniedHttpException('Vous devez être connecté pour accéder à cette ressource.');
         }
 
-        $data = json_decode($request->getContent(), true);
+        $content = $request->getContent();
+        $data = json_decode($content, true);
 
-        // Mise à jour des informations de base de l'utilisateur
-        if (isset($data['firstName'])) {
-            $user->setFirstName($data['firstName']);
-        }
-
-        if (isset($data['lastName'])) {
-            $user->setLastName($data['lastName']);
-        }
-
-        if (isset($data['sexe'])) {
-            $user->setSexe($data['sexe']);
-        }
-
-        // Mise à jour des adresses
-        if (isset($data['addresses']) && is_array($data['addresses'])) {
-            // Suppression des adresses existantes si elles ne sont pas dans la nouvelle liste
-            $existingAddresses = [];
-            foreach ($user->getAddress() as $existingAddress) {
-                $existingAddresses[$existingAddress->getId()] = $existingAddress;
-            }
-
-            foreach ($data['addresses'] as $addressData) {
-                if (isset($addressData['id']) && $addressData['id']) {
-                    // Mise à jour d'une adresse existante
-                    $address = $addressRepository->find($addressData['id']);
-
-                    if ($address && $address->getIdUser()->contains($user)) {
-                        $address->setAddress($addressData['address'] ?? $address->getAddress());
-                        $address->setCity($addressData['city'] ?? $address->getCity());
-                        $address->setZipCode($addressData['zipCode'] ?? $address->getZipCode());
-                        $address->setRegion($addressData['region'] ?? $address->getRegion());
-
-                        // Retirer de la liste des adresses à supprimer
-                        unset($existingAddresses[$address->getId()]);
-                    }
-                } else {
-                    // Création d'une nouvelle adresse
-                    $address = new Address();
-                    $address->setAddress($addressData['address']);
-                    $address->setCity($addressData['city']);
-                    $address->setZipCode($addressData['zipCode']);
-                    $address->setRegion($addressData['region']);
-
-                    $address->addIdUser($user);
-                    $user->addAddress($address);
-
-                    $this->em->persist($address);
-                }
-            }
-
-            // Suppression des adresses qui ne sont plus dans la liste
-            foreach ($existingAddresses as $addressToRemove) {
-                $user->removeAddress($addressToRemove);
-                $addressToRemove->removeIdUser($user);
-
-                if ($addressToRemove->getIdUser()->isEmpty()) {
-                    $this->em->remove($addressToRemove);
-                }
+        $serializer->deserialize($content, User::class, 'json', [
+            'object_to_populate' => $user,
+            'groups' => ['user:write']
+        ]);
+        
+        foreach ($user->getAddress() as $existingAddress) {
+            $user->removeAddress($existingAddress);
+            $existingAddress->removeIdUser($user);
+            
+            if ($existingAddress->getIdUser()->isEmpty()) {
+                $this->em->remove($existingAddress);
             }
         }
+        
+        if (isset($data['address']) && is_array($data['address'])) {
+            foreach ($data['address'] as $addressData) {
+                $address = new Address();
+                $address->setAddress($addressData['address'] ?? null);
+                $address->setCity($addressData['city'] ?? null);
+                $address->setZipCode($addressData['zipCode'] ?? null);
+                $address->setRegion($addressData['region'] ?? null);
+                $address->setLatitude($addressData['latitude'] ?? null);
+                $address->setLongitude($addressData['longitude'] ?? null);
 
-        // Mise à jour des allergènes
-        if (isset($data['allergenIds']) && is_array($data['allergenIds'])) {
-            // Supprimer tous les allergènes existants
-            foreach ($user->getAllergen() as $allergen) {
-                $user->removeAllergen($allergen);
-            }
-
-            // Ajouter les nouveaux allergènes
-            foreach ($data['allergenIds'] as $allergenId) {
-                $allergen = $allergenRepository->find($allergenId);
-                if ($allergen) {
-                    $user->addAllergen($allergen);
-                }
-            }
-        }
-
-        // Mise à jour des préférences alimentaires
-        if (isset($data['foodPreferenceIds']) && is_array($data['foodPreferenceIds'])) {
-            // Supprimer toutes les préférences existantes
-            foreach ($user->getFoodPreference() as $preference) {
-                $user->removeFoodPreference($preference);
-            }
-
-            // Ajouter les nouvelles préférences
-            foreach ($data['foodPreferenceIds'] as $preferenceId) {
-                $preference = $foodPreferenceRepository->find($preferenceId);
-                if ($preference) {
-                    $user->addFoodPreference($preference);
-                }
+                $address->addIdUser($user);
+                $user->addAddress($address);
+                
+                $this->em->persist($address);
             }
         }
+        
+        // foreach ($user->getAllergen() as $allergen) {
+        //     $user->removeAllergen($allergen);
+        // }
+        
+        // if (isset($data['allergenIds']) && is_array($data['allergenIds'])) {
+        //     foreach ($data['allergenIds'] as $allergenId) {
+        //         $allergen = $allergenRepository->find($allergenId);
+        //         if ($allergen) {
+        //             $user->addAllergen($allergen);
+        //         }
+        //     }
+        // }
+        
+        // foreach ($user->getFoodPreference() as $preference) {
+        //     $user->removeFoodPreference($preference);
+        // }
+        
+        // if (isset($data['foodPreferenceIds']) && is_array($data['foodPreferenceIds'])) {
+        //     foreach ($data['foodPreferenceIds'] as $preferenceId) {
+        //         $preference = $foodPreferenceRepository->find($preferenceId);
+        //         if ($preference) {
+        //             $user->addFoodPreference($preference);
+        //         }
+        //     }
+        // }
 
-        // Validation de l'entité utilisateur
         $errors = $this->validator->validate($user);
         if (count($errors) > 0) {
             $errorMessages = [];
