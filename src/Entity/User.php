@@ -143,6 +143,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Offer::class, mappedBy: 'buyer')]
     private Collection $orders;
 
+    /**
+     * @var Collection<int, Rating>
+     */
+    #[ORM\OneToMany(targetEntity: Rating::class, mappedBy: 'rater_user_id')]
+    private Collection $ratings;
+
     public function __construct()
     {
         $this->address = new ArrayCollection();
@@ -150,6 +156,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->food_preferences = new ArrayCollection();
         $this->offers = new ArrayCollection();
         $this->orders = new ArrayCollection();
+        $this->ratings = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -428,6 +435,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($order->getBuyer() === $this) {
                 $order->setBuyer(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Rating>
+     */
+    public function getRatings(): Collection
+    {
+        return $this->ratings;
+    }
+
+    public function addRating(Rating $rating): static
+    {
+        if (!$this->ratings->contains($rating)) {
+            $this->ratings->add($rating);
+            $rating->setRaterUserId($this);
+        }
+
+        return $this;
+    }
+
+    public function removeRating(Rating $rating): static
+    {
+        if ($this->ratings->removeElement($rating)) {
+            // set the owning side to null (unless already changed)
+            if ($rating->getRaterUserId() === $this) {
+                $rating->setRaterUserId(null);
             }
         }
 
