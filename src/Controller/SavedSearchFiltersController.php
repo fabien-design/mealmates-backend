@@ -55,16 +55,50 @@ class SavedSearchFiltersController extends AbstractController
         required: true,
         content: new OA\JsonContent(
             properties: [
-                new OA\Property(property: 'name', type: 'string'),
-                new OA\Property(property: 'latitude', type: 'number', format: 'float'),
-                new OA\Property(property: 'longitude', type: 'number', format: 'float'),
-                new OA\Property(property: 'radius', type: 'integer'),
-                new OA\Property(property: 'productTypes', type: 'array', items: new OA\Items(type: 'string')),
-                new OA\Property(property: 'expirationDate', type: 'string', enum: ['today', 'tomorrow', 'week']),
-                new OA\Property(property: 'minPrice', type: 'number', format: 'float'),
-                new OA\Property(property: 'maxPrice', type: 'number', format: 'float'),
-                new OA\Property(property: 'minSellerRating', type: 'number', format: 'float'),
-                new OA\Property(property: 'dietaryPreferences', type: 'array', items: new OA\Items(type: 'string'))
+                new OA\Property(property: 'name', type: 'string', description: 'Nom de la recherche sauvegardée'),
+                new OA\Property(property: 'latitude', type: 'number', format: 'float', description: 'Latitude du point de recherche'),
+                new OA\Property(property: 'longitude', type: 'number', format: 'float', description: 'Longitude du point de recherche'),
+                new OA\Property(
+                    property: 'filters',
+                    type: 'object',
+                    properties: [
+                        new OA\Property(
+                            property: 'productTypes',
+                            type: 'array',
+                            items: new OA\Items(type: 'string', enum: ['fruits', 'grocery', 'vegetables', 'dairy', 'meals'])
+                        ),
+                        new OA\Property(
+                            property: 'dietaryPreferences',
+                            type: 'array',
+                            items: new OA\Items(type: 'string')
+                        ),
+                        new OA\Property(
+                            property: 'expirationDate',
+                            type: 'string',
+                            enum: ['today', 'tomorrow', 'week']
+                        ),
+                        new OA\Property(
+                            property: 'distance',
+                            type: 'integer',
+                            description: 'Rayon de recherche en mètres'
+                        ),
+                        new OA\Property(
+                            property: 'price',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'min', type: 'number', format: 'float'),
+                                new OA\Property(property: 'max', type: 'number', format: 'float')
+                            ]
+                        ),
+                        new OA\Property(
+                            property: 'minSellerRating',
+                            type: 'number',
+                            format: 'float',
+                            minimum: 0,
+                            maximum: 5
+                        )
+                    ]
+                )
             ]
         )
     )]
@@ -90,11 +124,16 @@ class SavedSearchFiltersController extends AbstractController
             ]
         )
     )]
-    public function createSavedSearch(Request $request): JsonResponse
+    public function createSavedSearch(
+        Request $request, 
+        SerializerInterface $serializer, 
+        EntityManagerInterface $entityManager, 
+        ValidatorInterface $validator
+    ): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
-
+    
         if ($user->getSavedSearchCount() >= 3) {
             return $this->json([
                 'success' => false,
@@ -102,69 +141,87 @@ class SavedSearchFiltersController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
         
-        $data = json_decode($request->getContent(), true);
-        
-        $savedSearch = new SavedSearchFilters();
-        $savedSearch->setUser($user);
+        try {
+            $savedSearch = new SavedSearchFilters();
+            $savedSearch->setUser($user);
 
-        if (isset($data['latitude'])) {
-            $savedSearch->setLatitude($data['latitude']);
-        }
-        
-        if (isset($data['longitude'])) {
-            $savedSearch->setLongitude($data['longitude']);
-        }
-        
-        if (isset($data['radius'])) {
-            $savedSearch->setRadius($data['radius']);
-        }
-        
-        if (isset($data['productTypes'])) {
-            $savedSearch->setProductTypes($data['productTypes']);
-        }
-        
-        if (isset($data['expirationDate'])) {
-            $savedSearch->setExpirationDate($data['expirationDate']);
-        }
-        
-        if (isset($data['minPrice'])) {
-            $savedSearch->setMinPrice($data['minPrice']);
-        }
-        
-        if (isset($data['maxPrice'])) {
-            $savedSearch->setMaxPrice($data['maxPrice']);
-        }
-        
-        if (isset($data['minSellerRating'])) {
-            $savedSearch->setMinSellerRating($data['minSellerRating']);
-        }
-        
-        if (isset($data['dietaryPreferences'])) {
-            $savedSearch->setDietaryPreferences($data['dietaryPreferences']);
-        }
-        
-        $errors = $this->validator->validate($savedSearch);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[$error->getPropertyPath()] = $error->getMessage();
+            $context = [
+                'object_to_populate' => $savedSearch,
+                'groups' => ['saved_search:write'],
+                'disable_type_enforcement' => true,
+                'ignored_attributes' => ['user'] // Sécurité supp (d'apres claude.ai)
+            ];
+            
+            $data = json_decode($request->getContent(), true);
+
+            if (isset($data['filters'])) {
+                $filters = $data['filters'];
+
+                if (isset($filters['distance'])) {
+                    $data['radius'] = $filters['distance'];
+                }
+                
+                if (isset($filters['productTypes'])) {
+                    $data['productTypes'] = $filters['productTypes'];
+                }
+                
+                if (isset($filters['expirationDate'])) {
+                    $data['expirationDate'] = $filters['expirationDate'];
+                }
+                
+                if (isset($filters['price']['min'])) {
+                    $data['minPrice'] = $filters['price']['min'];
+                }
+                
+                if (isset($filters['price']['max'])) {
+                    $data['maxPrice'] = $filters['price']['max'];
+                }
+                
+                if (isset($filters['minSellerRating'])) {
+                    $data['minSellerRating'] = $filters['minSellerRating'];
+                }
+                
+                if (isset($filters['dietaryPreferences'])) {
+                    $data['dietaryPreferences'] = $filters['dietaryPreferences'];
+                }
+            }
+
+            $serializer->deserialize(
+                json_encode($data),
+                SavedSearchFilters::class,
+                'json',
+                $context
+            );
+            
+            $errors = $validator->validate($savedSearch);
+            if (count($errors) > 0) {
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[$error->getPropertyPath()] = $error->getMessage();
+                }
+                
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Erreur de validation',
+                    'errors' => $errorMessages
+                ], Response::HTTP_BAD_REQUEST);
             }
             
+            $entityManager->persist($savedSearch);
+            $entityManager->flush();
+            
+            return $this->json([
+                'success' => true,
+                'message' => 'Recherche sauvegardée avec succès',
+                'savedSearch' => $savedSearch
+            ], Response::HTTP_CREATED, [], ['groups' => ['saved_search:read']]);
+            
+        } catch (\Exception $e) {
             return $this->json([
                 'success' => false,
-                'message' => 'Erreur de validation',
-                'errors' => $errorMessages
+                'message' => 'Erreur lors de la désérialisation: ' . $e->getMessage()
             ], Response::HTTP_BAD_REQUEST);
         }
-        
-        $this->entityManager->persist($savedSearch);
-        $this->entityManager->flush();
-        
-        return $this->json([
-            'success' => true,
-            'message' => 'Recherche sauvegardée avec succès',
-            'savedSearch' => $savedSearch
-        ], Response::HTTP_CREATED, [], ['groups' => ['saved_search:read']]);
     }
 
     #[Route('/{id}', name: 'api_saved_searches_get', methods: ['GET'])]

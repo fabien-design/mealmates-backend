@@ -38,7 +38,7 @@ class UserProfileCRUD extends AbstractController
     ) {
     }
 
-    #[Route('/me', name: 'api_profile_me', methods: ['GET'])]
+    #[Route('/logged', name: 'api_profile_me', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     #[OA\Response(
         response: 200,
@@ -58,7 +58,7 @@ class UserProfileCRUD extends AbstractController
             ]
         )
     )]
-    public function me(): JsonResponse
+    public function logged(): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
