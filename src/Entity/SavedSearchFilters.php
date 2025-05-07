@@ -17,16 +17,6 @@ class SavedSearchFilters
     #[Groups(['saved_search:read'])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 55)]
-    #[Groups(['saved_search:read', 'saved_search:write'])]
-    #[Assert\NotBlank(message: "Le nom ne peut pas être vide")]
-    #[Assert\Length(max: 55, maxMessage: "Le nom ne peut pas dépasser {{ limit }} caractères")]
-    #[Assert\Regex(
-        pattern: "/^[a-zA-Z0-9\s]+$/",
-        message: "Le nom ne peut contenir que des lettres, des chiffres et des espaces"
-    )]
-    private ?string $name = null;
-
     #[ORM\Column(nullable: true)]
     #[Groups(['saved_search:read', 'saved_search:write'])]
     #[Assert\Range(min: -90, max: 90, notInRangeMessage: "La latitude doit être comprise entre {{ min }} et {{ max }}")]
@@ -202,18 +192,6 @@ class SavedSearchFilters
     public function setUser(?User $user): static
     {
         $this->user = $user;
-
-        return $this;
-    }
-
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
-
-    public function setName(string $name): static
-    {
-        $this->name = $name;
 
         return $this;
     }

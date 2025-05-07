@@ -55,7 +55,6 @@ class SavedSearchFiltersController extends AbstractController
         required: true,
         content: new OA\JsonContent(
             properties: [
-                new OA\Property(property: 'name', type: 'string', description: 'Nom de la recherche sauvegardée'),
                 new OA\Property(property: 'latitude', type: 'number', format: 'float', description: 'Latitude du point de recherche'),
                 new OA\Property(property: 'longitude', type: 'number', format: 'float', description: 'Longitude du point de recherche'),
                 new OA\Property(
