@@ -14,6 +14,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use OpenApi\Attributes as OA;
+use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use Twig\Node\Expression\Test\SameasTest;
 
 #[Route('/api/v1/saved-searches')]
 #[IsGranted('ROLE_USER')]
@@ -24,8 +29,7 @@ class SavedSearchFiltersController extends AbstractController
         private EntityManagerInterface $entityManager,
         private SerializerInterface $serializer,
         private ValidatorInterface $validator
-    ) {
-    }
+    ) {}
 
     #[Route('', name: 'api_saved_searches_list', methods: ['GET'])]
     #[OA\Response(
@@ -41,12 +45,10 @@ class SavedSearchFiltersController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        
+
         $savedSearches = $user->getSavedSearchFilters();
-        
-        return $this->json([
-            'savedSearches' => $savedSearches
-        ], Response::HTTP_OK, [], ['groups' => ['saved_search:read']]);
+
+        return $this->json($savedSearches, Response::HTTP_OK, [], ['groups' => ['saved_search:read']]);
     }
 
     #[Route('', name: 'api_saved_searches_create', methods: ['POST'])]
@@ -124,97 +126,58 @@ class SavedSearchFiltersController extends AbstractController
         )
     )]
     public function createSavedSearch(
-        Request $request, 
-        SerializerInterface $serializer, 
-        EntityManagerInterface $entityManager, 
-        ValidatorInterface $validator
-    ): JsonResponse
-    {
+        Request $request,
+        EntityManagerInterface $entityManager,
+        ValidatorInterface $validator,
+    ): JsonResponse {
         /** @var User $user */
         $user = $this->getUser();
-    
+
         if ($user->getSavedSearchCount() >= 3) {
             return $this->json([
                 'success' => false,
                 'message' => 'Vous avez atteint la limite de 3 recherches sauvegardées.'
             ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         try {
             $savedSearch = new SavedSearchFilters();
             $savedSearch->setUser($user);
 
-            $context = [
-                'object_to_populate' => $savedSearch,
-                'groups' => ['saved_search:write'],
-                'disable_type_enforcement' => true,
-                'ignored_attributes' => ['user'] // Sécurité supp (d'apres claude.ai)
-            ];
-            
-            $data = json_decode($request->getContent(), true);
-
-            if (isset($data['filters'])) {
-                $filters = $data['filters'];
-
-                if (isset($filters['distance'])) {
-                    $data['radius'] = $filters['distance'];
-                }
-                
-                if (isset($filters['productTypes'])) {
-                    $data['productTypes'] = $filters['productTypes'];
-                }
-                
-                if (isset($filters['expirationDate'])) {
-                    $data['expirationDate'] = $filters['expirationDate'];
-                }
-                
-                if (isset($filters['price']['min'])) {
-                    $data['minPrice'] = $filters['price']['min'];
-                }
-                
-                if (isset($filters['price']['max'])) {
-                    $data['maxPrice'] = $filters['price']['max'];
-                }
-                
-                if (isset($filters['minSellerRating'])) {
-                    $data['minSellerRating'] = $filters['minSellerRating'];
-                }
-                
-                if (isset($filters['dietaryPreferences'])) {
-                    $data['dietaryPreferences'] = $filters['dietaryPreferences'];
-                }
-            }
-
-            $serializer->deserialize(
-                json_encode($data),
+            $this->serializer->deserialize(
+                $request->getContent(),
                 SavedSearchFilters::class,
-                'json',
-                $context
+                JsonEncoder::FORMAT,
+                [
+                    AbstractNormalizer::OBJECT_TO_POPULATE => $savedSearch,
+                    AbstractNormalizer::GROUPS => ['saved_search:write'],
+                ]
             );
-            
+
+            $savedSearch;
+
+
             $errors = $validator->validate($savedSearch);
             if (count($errors) > 0) {
                 $errorMessages = [];
                 foreach ($errors as $error) {
                     $errorMessages[$error->getPropertyPath()] = $error->getMessage();
                 }
-                
+
                 return $this->json([
                     'success' => false,
                     'message' => 'Erreur de validation',
                     'errors' => $errorMessages
                 ], Response::HTTP_BAD_REQUEST);
             }
-            
+
             $entityManager->persist($savedSearch);
             $entityManager->flush();
-            
+
             return $this->json([
                 'success' => true,
-                'message' => 'Recherche sauvegardée avec succès',
-                'savedSearch' => $savedSearch
-            ], Response::HTTP_CREATED, [], ['groups' => ['saved_search:read']]);
-            
+                'message' => 'Recherche sauvegardée avec succès'
+            ], Response::HTTP_CREATED);
         } catch (\Exception $e) {
             return $this->json([
                 'success' => false,
@@ -257,14 +220,14 @@ class SavedSearchFiltersController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        
+
         if ($savedSearch->getUser() !== $user) {
             return $this->json([
                 'success' => false,
                 'message' => 'Vous n\'êtes pas autorisé à accéder à cette recherche'
             ], Response::HTTP_FORBIDDEN);
         }
-        
+
         return $this->json([
             'savedSearch' => $savedSearch
         ], Response::HTTP_OK, [], ['groups' => ['saved_search:read']]);
@@ -295,17 +258,17 @@ class SavedSearchFiltersController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        
+
         if ($savedSearch->getUser() !== $user) {
             return $this->json([
                 'success' => false,
                 'message' => 'Vous n\'êtes pas autorisé à supprimer cette recherche'
             ], Response::HTTP_FORBIDDEN);
         }
-        
+
         $this->entityManager->remove($savedSearch);
         $this->entityManager->flush();
-        
+
         return $this->json([
             'success' => true,
             'message' => 'Recherche supprimée avec succès'

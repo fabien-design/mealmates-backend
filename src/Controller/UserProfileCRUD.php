@@ -39,7 +39,6 @@ class UserProfileCRUD extends AbstractController
     }
 
     #[Route('/logged', name: 'api_profile_me', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
     #[OA\Response(
         response: 200,
         description: 'Retourne success si l\'utilisateur est connecté',

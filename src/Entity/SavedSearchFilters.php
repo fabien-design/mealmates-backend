@@ -38,7 +38,7 @@ class SavedSearchFilters
 
     #[ORM\Column(length: 20, nullable: true)]
     #[Groups(['saved_search:read', 'saved_search:write'])]
-    #[Assert\Choice(choices: ["today", "tomorrow", "week"], message: "La valeur doit être l'une des suivantes : today, tomorrow, week")]
+    #[Assert\Choice(choices: ["today", "tomorrow", "week", ""], message: "La valeur doit être l'une des suivantes : today, tomorrow, week")]
     private ?string $expirationDate = null;
 
     #[ORM\Column(nullable: true)]
