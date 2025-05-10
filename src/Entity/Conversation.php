@@ -27,6 +27,10 @@ class Conversation
     #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'conversation', orphanRemoval: true)]
     private Collection $messages;
 
+    #[ORM\ManyToOne(inversedBy: 'conversations')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Offer $offer = null;
+
     public function __construct()
     {
         $this->users = new ArrayCollection();
@@ -88,6 +92,18 @@ class Conversation
                 $message->setConversation(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getOffer(): ?Offer
+    {
+        return $this->offer;
+    }
+
+    public function setOffer(?Offer $offer): static
+    {
+        $this->offer = $offer;
 
         return $this;
     }
