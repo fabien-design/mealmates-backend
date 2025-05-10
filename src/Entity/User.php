@@ -515,10 +515,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * @return Collection<int, SavedSearchFilters>
-     */
-    #[Groups(['user:read'])]
     public function getSavedSearchFilters(): Collection
     {
         return $this->savedSearchFilters;
