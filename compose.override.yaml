@@ -21,3 +21,9 @@ services:
       - "8025:8025"
       - "1025:1025"
 
+
+###> symfony/mercure-bundle ###
+  mercure:
+    ports:
+      - "80"
+###< symfony/mercure-bundle ###

@@ -44,3 +44,7 @@ services:
     App\Serializer\Normalizer\OfferNormalizer:
         tags:
             - { name: 'serializer.normalizer', priority: 500 }
+    
+    App\Service\MercureTokenService:
+        arguments:
+            $mercureJwtSecret: '%env(MERCURE_JWT_SECRET)%'

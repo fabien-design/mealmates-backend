@@ -8,6 +8,13 @@ framework:
     #esi: true
     #fragments: true
 
+    http_client:
+        scoped_clients:
+            mercure.client:
+                base_uri: '%env(MERCURE_URL)%'
+                headers:
+                    Authorization: 'Bearer %env(MERCURE_JWT_SECRET)%'
+
 when@test:
     framework:
         test: true

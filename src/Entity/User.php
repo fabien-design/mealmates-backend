@@ -164,7 +164,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var Collection<int, Conversation>
      */
-    #[ORM\ManyToMany(targetEntity: Conversation::class, mappedBy: 'users')]
+    #[ORM\OneToMany(targetEntity: Conversation::class, mappedBy: 'buyer')]
     private Collection $conversations;
 
     public function __construct()
@@ -567,7 +567,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->conversations->contains($conversation)) {
             $this->conversations->add($conversation);
-            $conversation->addUser($this);
+            $conversation->setBuyer($this);
         }
 
         return $this;
@@ -576,7 +576,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeConversation(Conversation $conversation): static
     {
         if ($this->conversations->removeElement($conversation)) {
-            $conversation->removeUser($this);
+            // set the owning side to null (unless already changed)
+            if ($conversation->getBuyer() === $this) {
+                $conversation->setBuyer(null);
+            }
         }
 
         return $this;
