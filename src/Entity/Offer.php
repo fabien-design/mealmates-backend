@@ -85,11 +85,17 @@ class Offer
     #[Groups('offer:read')]
     private ?Address $address = null;
 
+    #[ORM\Column(options: ['default' => false])]
+    private ?bool $expiryAlertSent = null;
+
     public function __construct()
     {
         $this->allergens = new ArrayCollection();
         $this->food_preferences = new ArrayCollection();
         $this->images = new ArrayCollection();
+        if(!isset($this->expiryAlertSent)) {
+            $this->expiryAlertSent = false;
+        }
     }
 
     public function getId(): ?int
@@ -303,6 +309,18 @@ class Offer
     public function setAddress(?Address $address): static
     {
         $this->address = $address;
+
+        return $this;
+    }
+
+    public function isExpiryAlertSent(): ?bool
+    {
+        return $this->expiryAlertSent;
+    }
+
+    public function setExpiryAlertSent(bool $expiryAlertSent): static
+    {
+        $this->expiryAlertSent = $expiryAlertSent;
 
         return $this;
     }
