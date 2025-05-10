@@ -31,6 +31,7 @@ final class Version20250421151940 extends AbstractMigration
         $this->addSql('ALTER TABLE offer_food_preference ADD CONSTRAINT FK_2BBA852353C674EE FOREIGN KEY (offer_id) REFERENCES offer (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE offer_food_preference ADD CONSTRAINT FK_2BBA8523E2D90E57 FOREIGN KEY (food_preference_id) REFERENCES food_preference (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE address ADD longitude DOUBLE PRECISION NOT NULL, ADD latitude DOUBLE PRECISION NOT NULL');
+        $this->addSql('CREATE TABLE image (id INT AUTO_INCREMENT NOT NULL, offer_id INT NOT NULL, name VARCHAR(255) DEFAULT NULL, size INT DEFAULT NULL, created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', INDEX IDX_C53D045F53C674EE (offer_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('ALTER TABLE image ADD CONSTRAINT FK_C53D045F53C674EE FOREIGN KEY (offer_id) REFERENCES offer (id)');
         $this->addSql('ALTER TABLE user CHANGE first_name first_name VARCHAR(50) NOT NULL');
     }
@@ -46,6 +47,7 @@ final class Version20250421151940 extends AbstractMigration
         $this->addSql('ALTER TABLE offer_allergen DROP FOREIGN KEY FK_5CC2B8AC6E775A4A');
         $this->addSql('ALTER TABLE offer_food_preference DROP FOREIGN KEY FK_2BBA852353C674EE');
         $this->addSql('ALTER TABLE offer_food_preference DROP FOREIGN KEY FK_2BBA8523E2D90E57');
+        $this->addSql('DROP TABLE image');
         $this->addSql('DROP TABLE offer');
         $this->addSql('DROP TABLE offer_allergen');
         $this->addSql('DROP TABLE offer_food_preference');
