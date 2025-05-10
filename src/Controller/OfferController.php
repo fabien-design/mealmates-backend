@@ -10,6 +10,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\SerializerInterface;
+use App\Entity\Offer;
 
 #[Route('/api/v1')]
 class OfferController extends AbstractController
@@ -70,6 +71,16 @@ class OfferController extends AbstractController
         $offers = $offerRepository->findNearbyOffers($lat, $lng, $radius, $filters);
        
         return $this->json($offers, Response::HTTP_OK, [], [
+            'groups' => ['offer:read'],
+        ]);
+    }
+
+    #[Route('/products/{id}', name: 'api_get_product', methods: ['GET'])]
+    #[OA\Tag(name: 'Offres')]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    public function getProduct(Offer $offer): JsonResponse
+    {
+        return $this->json($offer, Response::HTTP_OK, [], [
             'groups' => ['offer:read'],
         ]);
     }
