@@ -29,20 +29,20 @@ class OfferRepository extends ServiceEntityRepository
         $potentialOffers = $qb->getQuery()->getResult();
 
         $offersWithDistance = [];
-        
+
         foreach ($potentialOffers as $offer) {
             $address = $offer->getAddress();
             if (!$address) {
                 continue;
             }
-            
+
             $offerLat = $address->getLatitude();
             $offerLng = $address->getLongitude();
-            
+
             if ($offerLat === null || $offerLng === null) {
                 continue;
             }
-            
+
             $distance = $this->calculateDistance($lat, $lng, $offerLat, $offerLng);
 
             if ($distance <= $radius) {
@@ -54,10 +54,10 @@ class OfferRepository extends ServiceEntityRepository
         usort($offersWithDistance, function ($a, $b) {
             return $a->distance <=> $b->distance;
         });
-        
+
         return $offersWithDistance;
     }
-    
+
     /**
      * add Offer filters 
      */
@@ -65,55 +65,55 @@ class OfferRepository extends ServiceEntityRepository
     {
         if (!empty($filters['productTypes'])) {
             $qb->andWhere('o.name IN (:productTypes)')
-               ->setParameter('productTypes', $filters['productTypes']);
+                ->setParameter('productTypes', $filters['productTypes']);
         }
 
         if (isset($filters['minPrice'])) {
             $qb->andWhere('o.price >= :minPrice')
-               ->setParameter('minPrice', $filters['minPrice']);
+                ->setParameter('minPrice', $filters['minPrice']);
         }
 
         if (isset($filters['maxPrice'])) {
             $qb->andWhere('o.price <= :maxPrice')
-               ->setParameter('maxPrice', $filters['maxPrice']);
+                ->setParameter('maxPrice', $filters['maxPrice']);
         }
 
         if (isset($filters['minSellerRating']) && $filters['minSellerRating'] > 0) {
             $qb->andWhere('s.rating >= :minSellerRating')
-               ->setParameter('minSellerRating', $filters['minSellerRating']);
+                ->setParameter('minSellerRating', $filters['minSellerRating']);
         }
 
         if (!empty($filters['expirationDate'])) {
             $today = new \DateTime('today');
-            
+
             switch ($filters['expirationDate']) {
                 case 'today':
                     $qb->andWhere('o.expiryDate = :today')
-                       ->setParameter('today', $today);
+                        ->setParameter('today', $today);
                     break;
-                    
+
                 case 'tomorrow':
                     $tomorrow = (new \DateTime('today'))->modify('+1 day');
                     $qb->andWhere('o.expiryDate = :tomorrow')
-                       ->setParameter('tomorrow', $tomorrow);
+                        ->setParameter('tomorrow', $tomorrow);
                     break;
-                    
+
                 case 'week':
                     $endOfWeek = (new \DateTime('today'))->modify('+7 days');
                     $qb->andWhere('o.expiryDate BETWEEN :today AND :endOfWeek')
-                       ->setParameter('today', $today)
-                       ->setParameter('endOfWeek', $endOfWeek);
+                        ->setParameter('today', $today)
+                        ->setParameter('endOfWeek', $endOfWeek);
                     break;
             }
         }
 
         if (!empty($filters['dietaryPreferences'])) {
             $qb->join('o.food_preferences', 'fp')
-               ->andWhere('fp.name IN (:dietaryPreferences)')
-               ->setParameter('dietaryPreferences', $filters['dietaryPreferences']);
+                ->andWhere('fp.name IN (:dietaryPreferences)')
+                ->setParameter('dietaryPreferences', $filters['dietaryPreferences']);
         }
     }
-    
+
     /**
      * Calcule la distance entre deux points géographiques en mètres
      * en utilisant la formule de Haversine
@@ -133,12 +133,12 @@ class OfferRepository extends ServiceEntityRepository
         $lonDiff = $lonRad2 - $lonRad1;
 
         // Formule de Haversine
-        $a = sin($latDiff / 2) * sin($latDiff / 2) + 
-             cos($latRad1) * cos($latRad2) * 
-             sin($lonDiff / 2) * sin($lonDiff / 2);
-        
+        $a = sin($latDiff / 2) * sin($latDiff / 2) +
+            cos($latRad1) * cos($latRad2) *
+            sin($lonDiff / 2) * sin($lonDiff / 2);
+
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        
+
         return $earthRadius * $c;
     }
 
@@ -161,5 +161,19 @@ class OfferRepository extends ServiceEntityRepository
             ->setParameter('category', $category)
             ->getQuery()
             ->getResult();
+    }
+
+    public function findExpiringOffers(\DateTimeInterface $expiryDate): array
+    {
+        $qb = $this->createQueryBuilder('o')
+            ->join('o.seller', 's')
+            ->where('o.expiryDate BETWEEN :today AND :expiry_date')
+            ->andWhere('o.hasBeenSold = false')
+            ->andWhere('o.expiryAlertSent = false')
+            ->setParameter('today', new \DateTime('today'))
+            ->setParameter('expiry_date', $expiryDate)
+            ->orderBy('o.expiryDate', 'ASC');
+
+        return $qb->getQuery()->getResult();
     }
 }

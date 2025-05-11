@@ -22,7 +22,7 @@ class Image
     private ?File $file = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['offer:read'])]
+    #[Groups(['offer:read', 'image:read'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255, nullable: true)]

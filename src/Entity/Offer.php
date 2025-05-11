@@ -19,23 +19,23 @@ class Offer
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups('offer:read')]
+    #[Groups(['offer:read', 'offer:write'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups('offer:read')]
+    #[Groups(['offer:read', 'offer:write'])]
     private ?string $description = null;
 
     #[ORM\Column]
-    #[Groups('offer:read')]
+    #[Groups(['offer:read', 'offer:write'])]
     private ?int $quantity = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
-    #[Groups('offer:read')]
+    #[Groups(['offer:read', 'offer:write'])]
     private ?\DateTimeInterface $expiryDate = null;
 
     #[ORM\Column]
-    #[Groups('offer:read')]
+    #[Groups(['offer:read', 'offer:write'])]
     private ?float $price = null;
 
     #[ORM\Column(nullable: true)]
@@ -50,14 +50,14 @@ class Offer
      * @var Collection<int, Allergen>
      */
     #[ORM\ManyToMany(targetEntity: Allergen::class, inversedBy: 'offers')]
-    #[Groups('offer:read')]
+    #[Groups(['offer:read'])]
     private Collection $allergens;
 
     /**
      * @var Collection<int, FoodPreference>
      */
     #[ORM\ManyToMany(targetEntity: FoodPreference::class, inversedBy: 'offers')]
-    #[Groups('offer:read')]
+    #[Groups(['offer:read'])]
     private Collection $food_preferences;
 
     #[ORM\ManyToOne(inversedBy: 'offers')]
@@ -70,26 +70,32 @@ class Offer
     private ?User $buyer = null;
 
     #[ORM\Column]
-    #[Groups('offer:read')]
+    #[Groups(['offer:read', 'offer:write'])]
     private ?bool $isRecurring = null;
 
     /**
      * @var Collection<int, Image>
      */
     #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'offer', orphanRemoval: true)]
-    #[Groups('offer:read')]
+    #[Groups(['offer:read'])]
     private Collection $images;
 
     #[ORM\ManyToOne(inversedBy: 'offers')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups('offer:read')]
+    #[Groups(['offer:read'])]
     private ?Address $address = null;
+
+    #[ORM\Column(options: ['default' => false])]
+    private ?bool $expiryAlertSent = null;
 
     public function __construct()
     {
         $this->allergens = new ArrayCollection();
         $this->food_preferences = new ArrayCollection();
         $this->images = new ArrayCollection();
+        if (!isset($this->expiryAlertSent)) {
+            $this->expiryAlertSent = false;
+        }
     }
 
     public function getId(): ?int
@@ -303,6 +309,18 @@ class Offer
     public function setAddress(?Address $address): static
     {
         $this->address = $address;
+
+        return $this;
+    }
+
+    public function isExpiryAlertSent(): ?bool
+    {
+        return $this->expiryAlertSent;
+    }
+
+    public function setExpiryAlertSent(bool $expiryAlertSent): static
+    {
+        $this->expiryAlertSent = $expiryAlertSent;
 
         return $this;
     }

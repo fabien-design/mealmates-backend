@@ -38,8 +38,7 @@ class UserProfileCRUD extends AbstractController
     ) {
     }
 
-    #[Route('/me', name: 'api_profile_me', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
+    #[Route('/logged', name: 'api_profile_me', methods: ['GET'])]
     #[OA\Response(
         response: 200,
         description: 'Retourne success si l\'utilisateur est connecté',
@@ -58,7 +57,7 @@ class UserProfileCRUD extends AbstractController
             ]
         )
     )]
-    public function me(): JsonResponse
+    public function logged(): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -145,16 +144,16 @@ class UserProfileCRUD extends AbstractController
             'object_to_populate' => $user,
             'groups' => ['user:write']
         ]);
-        
+
         foreach ($user->getAddress() as $existingAddress) {
             $user->removeAddress($existingAddress);
             $existingAddress->removeIdUser($user);
-            
+
             if ($existingAddress->getIdUser()->isEmpty()) {
                 $this->em->remove($existingAddress);
             }
         }
-        
+
         if (isset($data['address']) && is_array($data['address'])) {
             foreach ($data['address'] as $addressData) {
                 $address = new Address();
@@ -167,15 +166,15 @@ class UserProfileCRUD extends AbstractController
 
                 $address->addIdUser($user);
                 $user->addAddress($address);
-                
+
                 $this->em->persist($address);
             }
         }
-        
+
         // foreach ($user->getAllergen() as $allergen) {
         //     $user->removeAllergen($allergen);
         // }
-        
+
         // if (isset($data['allergenIds']) && is_array($data['allergenIds'])) {
         //     foreach ($data['allergenIds'] as $allergenId) {
         //         $allergen = $allergenRepository->find($allergenId);
@@ -184,11 +183,11 @@ class UserProfileCRUD extends AbstractController
         //         }
         //     }
         // }
-        
+
         // foreach ($user->getFoodPreference() as $preference) {
         //     $user->removeFoodPreference($preference);
         // }
-        
+
         // if (isset($data['foodPreferenceIds']) && is_array($data['foodPreferenceIds'])) {
         //     foreach ($data['foodPreferenceIds'] as $preferenceId) {
         //         $preference = $foodPreferenceRepository->find($preferenceId);
@@ -219,42 +218,6 @@ class UserProfileCRUD extends AbstractController
             'user' => $user
         ], Response::HTTP_OK, [], [
             'groups' => ['user:read', 'user:profile', 'address:read', 'allergen:read', 'food_preference:read']
-        ]);
-    }
-
-    #[Route('/allergens/list', name: 'api_allergens_list', methods: ['GET'])]
-    #[OA\Response(
-        response: 200,
-        description: 'Liste de tous les allergènes disponibles',
-        content: new OA\JsonContent(
-            type: 'array',
-            items: new OA\Items(ref: new Model(type: Allergen::class, groups: ['allergen:read']))
-        )
-    )]
-    public function getAllergens(AllergenRepository $allergenRepository): JsonResponse
-    {
-        $allergens = $allergenRepository->findAll();
-
-        return $this->json($allergens, Response::HTTP_OK, [], [
-            'groups' => ['allergen:read']
-        ]);
-    }
-
-    #[Route('/food-preferences/list', name: 'api_food_preferences_list', methods: ['GET'])]
-    #[OA\Response(
-        response: 200,
-        description: 'Liste de toutes les préférences alimentaires disponibles',
-        content: new OA\JsonContent(
-            type: 'array',
-            items: new OA\Items(ref: new Model(type: FoodPreference::class, groups: ['food_preference:read']))
-        )
-    )]
-    public function getFoodPreferences(FoodPreferenceRepository $foodPreferenceRepository): JsonResponse
-    {
-        $preferences = $foodPreferenceRepository->findAll();
-
-        return $this->json($preferences, Response::HTTP_OK, [], [
-            'groups' => ['food_preference:read']
         ]);
     }
 
