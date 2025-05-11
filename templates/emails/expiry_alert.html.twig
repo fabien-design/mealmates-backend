@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Votre offre expire bientôt - MealMates</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Lillita+One&display=swap" rel="stylesheet">
+		<style>
+			@import url('https://fonts.googleapis.com/css2?family=Lillita+One &display=swap');
+
+			body {
+				font-family: Arial, sans-serif;
+				line-height: 1.6;
+				color: #333;
+				background-color: #f9f9f9;
+				margin: 0;
+				padding: 0;
+			}
+			.container {
+				max-width: 600px;
+				margin: 0 auto;
+				padding: 20px;
+				background-color: #ffffff;
+				border-radius: 8px;
+				box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+			}
+			.header {
+				text-align: center;
+				margin-bottom: 30px;
+				padding: 20px 0;
+				background-color: #5E1969;
+				border-radius: 8px 8px 0 0;
+			}
+			.logo {
+				width: 150px;
+				height: auto;
+				margin-bottom: 15px;
+			}
+			h1,
+			h2 {
+				font-family: 'Lillita One', sans-serif;
+				font-weight: 700;
+				color: #5E1969;
+				margin: 0;
+				padding: 10px 0;
+			}
+			.header h1 {
+				color: #ffffff;
+			}
+			.button {
+				display: inline-block;
+				background-color: #7F4591;
+				color: white !important;
+				text-decoration: none;
+				padding: 12px 24px;
+				border-radius: 4px;
+				margin-top: 20px;
+				font-weight: bold;
+				transition: background-color 0.3s;
+			}
+			.button:hover {
+				background-color: #5E1969;
+			}
+			.button.secondary {
+				background-color: #D4C3E2;
+				color: #5E1969 !important;
+			}
+			.button.secondary:hover {
+				background-color: #C19EE0;
+			}
+			.content {
+				background-color: #ffffff;
+				padding: 20px;
+				border-radius: 0 0 8px 8px;
+			}
+			.highlight {
+				background-color: #FFE7E7;
+				padding: 15px;
+				border-radius: 4px;
+				margin: 20px 0;
+				border-left: 4px solid #FF6B6B;
+			}
+			.footer {
+				margin-top: 30px;
+				padding-top: 20px;
+				border-top: 1px solid #D4C3E2;
+				text-align: center;
+				font-size: 12px;
+				color: #7F4591;
+			}
+			.url-display {
+				word-break: break-all;
+				margin-top: 20px;
+				padding: 15px;
+				background-color: #D4C3E2;
+				border-radius: 4px;
+				font-size: 14px;
+				color: #5E1969;
+			}
+			.tagline {
+				font-family: 'Lillita One', cursive;
+				font-size: 16px;
+				color: #7F4591;
+				text-align: center;
+				margin: 15px 0;
+			}
+			.product-info {
+				background-color: #F9F2FF;
+				padding: 15px;
+				border-radius: 4px;
+				margin: 20px 0;
+			}
+			.actions {
+				display: flex;
+				justify-content: center;
+				gap: 10px;
+				margin-top: 25px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<div class="header">
+				<h1>Alerte de péremption MealMates</h1>
+			</div>
+
+			<div class="content">
+				<p>Bonjour
+					{{ user.firstName }},</p>
+
+				<p>Nous vous informons que votre offre
+					<strong>"{{ offer.name }}"</strong>
+					expire dans
+					<strong>{{ days_remaining }}
+						jour(s)</strong>.</p>
+
+				<div class="highlight">
+					<p>C'est le moment d'agir pour éviter le gaspillage alimentaire&nbsp;! Vous pouvez&nbsp;:</p>
+					<ul>
+						<li>Baisser le prix pour accélérer la vente</li>
+						<li>Transformer votre offre en don gratuit</li>
+						<li>Modifier les détails de votre offre pour la rendre plus attractive</li>
+					</ul>
+				</div>
+
+				<div class="product-info">
+					<h2>Détails de votre offre</h2>
+					<ul>
+						<li>
+							<strong>Nom :</strong>
+							{{ offer.name }}</li>
+						<li>
+							<strong>Prix actuel :</strong>
+							{{ offer.price }}€</li>
+						<li>
+							<strong>Quantité :</strong>
+							{{ offer.quantity }}</li>
+						<li>
+							<strong>Date d'expiration :</strong>
+							{{ offer.expiryDate|date('d/m/Y') }}</li>
+					</ul>
+				</div>
+
+				<div class="actions">
+					<a href="{{ edit_url }}" class="button">Modifier mon offre</a>
+					<a href="{{ edit_url }}?convert=donation" class="button secondary">Convertir en don</a>
+				</div>
+
+				<div class="tagline">
+					<p>Arrêter le gaspillage, Économiser de l'argent, Sauver la Planète.</p>
+				</div>
+
+				<div class="footer">
+					<p>MealMates - Lutter contre le gaspillage alimentaire, un repas à la fois.</p>
+					<p>&copy;
+						{{ "now"|date("Y") }}
+						MealMates. Tous droits réservés.</p>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

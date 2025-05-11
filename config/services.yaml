@@ -43,5 +43,4 @@ services:
 
     App\Serializer\Normalizer\OfferNormalizer:
         tags:
-            # register the normalizer with a high priority (called earlier)
             - { name: 'serializer.normalizer', priority: 500 }
