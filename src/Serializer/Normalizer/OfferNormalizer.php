@@ -11,17 +11,18 @@ class OfferNormalizer implements NormalizerInterface
     public function __construct(
         #[Autowire(service: 'serializer.normalizer.object')]
         private readonly NormalizerInterface $normalizer
-    )
-    {
+    ) {
     }
 
     public function normalize(mixed $object, ?string $format = null, array $context = []): array
     {
         $data = $this->normalizer->normalize($object, $format, $context);
 
-        if (isset($data['address']) && 
-            isset($data['address']['latitude']) && 
-            isset($data['address']['longitude'])) {
+        if (
+            isset($data['address']) &&
+            isset($data['address']['latitude']) &&
+            isset($data['address']['longitude'])
+        ) {
 
             $exactLat = $data['address']['latitude'];
             $exactLng = $data['address']['longitude'];
@@ -30,7 +31,7 @@ class OfferNormalizer implements NormalizerInterface
             $approxLng = $this->approximateCoordinate($exactLng);
 
             $data['position'] = [$approxLat, $approxLng];
-            
+
             // suppr l'addresse du vendeur pour la confidentialité (Hugo l'a demandé)
             unset($data['address']);
         }
@@ -42,7 +43,7 @@ class OfferNormalizer implements NormalizerInterface
         if (property_exists($object, 'distance')) {
             $data['distance'] = $object->distance;
         }
-        
+
         return $data;
     }
 
