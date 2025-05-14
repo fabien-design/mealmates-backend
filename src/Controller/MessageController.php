@@ -47,7 +47,7 @@ class MessageController extends AbstractController
     $conversations = $this->conversationRepository->findByUser($user);
 
     return $this->json($conversations, Response::HTTP_OK, [], [
-      'groups' => ['conversation:read', 'user:read', 'offer:read']
+      'groups' => ['conversation:read', 'offer:read']
     ]);
   }
 
@@ -101,7 +101,7 @@ class MessageController extends AbstractController
       return $this->json(['message' => 'Conversation not found'], Response::HTTP_NOT_FOUND);
     }
 
-    if (!$conversation->getParticipants()->contains($user)) {
+    if (!in_array($user, $conversation->getParticipants())) {
       return $this->json(['message' => 'Access denied'], Response::HTTP_FORBIDDEN);
     }
 
@@ -202,7 +202,7 @@ class MessageController extends AbstractController
       return $this->json(['message' => 'Conversation not found'], Response::HTTP_NOT_FOUND);
     }
 
-    if (!$conversation->getParticipants()->contains($user)) {
+    if (!in_array($user, $conversation->getParticipants())) {
       return $this->json(['message' => 'Access denied'], Response::HTTP_FORBIDDEN);
     }
 
@@ -253,7 +253,7 @@ class MessageController extends AbstractController
       return $this->json(['message' => 'Conversation not found'], Response::HTTP_NOT_FOUND);
     }
 
-    if (!$conversation->getParticipants()->contains($user)) {
+    if (!in_array($user,$conversation->getParticipants())) {
       return $this->json(['message' => 'Access denied'], Response::HTTP_FORBIDDEN);
     }
 
