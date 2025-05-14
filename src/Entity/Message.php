@@ -36,7 +36,7 @@ class Message
     #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'message')]
     private Collection $images;
 
-    #[ORM\Column]
+    #[ORM\Column(options: ['default' => false])]
     private ?bool $isRead = null;
 
     public function __construct()
