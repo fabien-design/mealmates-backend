@@ -57,14 +57,14 @@ class MessageRepository extends ServiceEntityRepository
     {
         $this->createQueryBuilder('m')
             ->update()
-            ->set('m.isRead', ':isRead')
+            ->set('m.isRead', ':isReadTrue')
             ->andWhere('m.conversation = :conversation')
             ->andWhere('m.sender != :user')
-            ->andWhere('m.isRead = :notRead')
-            ->setParameter('isRead', true)
+            ->andWhere('m.isRead = :isReadFalse')
+            ->setParameter('isReadTrue', true)
+            ->setParameter('isReadFalse', false)
             ->setParameter('conversation', $conversation)
             ->setParameter('user', $user)
-            ->setParameter('notRead', false)
             ->getQuery()
             ->execute();
     }

@@ -74,6 +74,7 @@ class MessageService
         $message->setSender($sender);
         $message->setContent($content);
         $message->setCreatedAt(new \DateTimeImmutable());
+        $message->setIsRead(false);
         
         if ($imageFiles) {
             foreach ($imageFiles as $imageFile) {
