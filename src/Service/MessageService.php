@@ -179,6 +179,11 @@ class MessageService
         $this->hub->publish($update);
     }
 
+    public function countUnreadMessages(User $user): int
+    {
+        return $this->messageRepository->countUnreadByUser($user);
+    }
+
     public function getPredefinedMessages(): array
     {
         return [

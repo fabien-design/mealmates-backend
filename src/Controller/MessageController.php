@@ -262,6 +262,27 @@ class MessageController extends AbstractController
     return $this->json(['message' => 'Messages marked as read'], Response::HTTP_OK);
   }
 
+  #[Route('/messages/unread-count', name: 'api_unread_messages_count', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Response(
+        response: 200,
+        description: 'Nombre de messages non lus',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'count', type: 'integer', example: 5)
+            ]
+        )
+    )]
+    public function getUnreadMessagesCount(): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        
+        $count = $this->messageService->countUnreadMessages($user);
+        
+        return $this->json(['count' => $count], Response::HTTP_OK);
+    }
+
   #[Route('/messages/predefined', name: 'api_predefined_messages', methods: ['GET'])]
   #[IsGranted('ROLE_USER')]
   #[OA\Response(
