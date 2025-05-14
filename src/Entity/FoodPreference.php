@@ -31,7 +31,6 @@ class FoodPreference
      * @var Collection<int, User>
      */
     #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'food_preferences')]
-    #[Groups(['food_preference:read'])]
     private Collection $user_foodPreference;
 
     /**

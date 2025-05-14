@@ -31,7 +31,6 @@ class Allergen
      * @var Collection<int, User>
      */
     #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'allergen')]
-    #[Groups(['allergen:read'])]
     private Collection $User_allergen;
 
     /**
