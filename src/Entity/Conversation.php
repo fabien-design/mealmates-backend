@@ -6,6 +6,7 @@ use App\Repository\ConversationRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: ConversationRepository::class)]
 class Conversation
@@ -13,24 +14,31 @@ class Conversation
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['conversation:read'])]
     private ?int $id = null;
 
     /**
      * @var Collection<int, Message>
      */
+    #[Groups(['conversation:read'])]
     #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'conversation', orphanRemoval: true)]
     private Collection $messages;
 
+    #[Groups(['conversation:read'])]
     #[ORM\ManyToOne(inversedBy: 'conversations')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Offer $offer = null;
 
-    #[ORM\ManyToOne(inversedBy: 'conversations')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?User $buyer = null;
 
     #[ORM\ManyToOne(inversedBy: 'conversations')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['conversation:read'])]
+    private ?User $buyer = null;
+
+
+    #[ORM\ManyToOne(inversedBy: 'conversations')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['conversation:read'])]
     private ?User $seller = null;
 
     public function __construct()
@@ -108,7 +116,7 @@ class Conversation
 
         return $this;
     }
-    
+
     public function getParticipants(): array
     {
         return [$this->buyer, $this->seller];

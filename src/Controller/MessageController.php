@@ -27,7 +27,8 @@ class MessageController extends AbstractController
     private ConversationRepository $conversationRepository,
     private MessageService $messageService,
     private SerializerInterface $serializer
-  ) {}
+  ) {
+  }
 
   #[Route('/conversations', name: 'api_conversations_list', methods: ['GET'])]
   #[IsGranted('ROLE_USER')]
@@ -151,7 +152,7 @@ class MessageController extends AbstractController
     );
 
     return $this->json($conversation, Response::HTTP_OK, [], [
-      'groups' => ['conversation:read', 'user:read', 'offer:read']
+      'groups' => ['conversation:read', 'offer:read']
     ]);
   }
 
@@ -253,7 +254,7 @@ class MessageController extends AbstractController
       return $this->json(['message' => 'Conversation not found'], Response::HTTP_NOT_FOUND);
     }
 
-    if (!in_array($user,$conversation->getParticipants())) {
+    if (!in_array($user, $conversation->getParticipants())) {
       return $this->json(['message' => 'Access denied'], Response::HTTP_FORBIDDEN);
     }
 
@@ -263,25 +264,25 @@ class MessageController extends AbstractController
   }
 
   #[Route('/messages/unread-count', name: 'api_unread_messages_count', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
-    #[OA\Response(
-        response: 200,
-        description: 'Nombre de messages non lus',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'count', type: 'integer', example: 5)
-            ]
-        )
-    )]
-    public function getUnreadMessagesCount(): JsonResponse
-    {
-        /** @var User $user */
-        $user = $this->getUser();
-        
-        $count = $this->messageService->countUnreadMessages($user);
-        
-        return $this->json(['count' => $count], Response::HTTP_OK);
-    }
+  #[IsGranted('ROLE_USER')]
+  #[OA\Response(
+    response: 200,
+    description: 'Nombre de messages non lus',
+    content: new OA\JsonContent(
+      properties: [
+        new OA\Property(property: 'count', type: 'integer', example: 5)
+      ]
+    )
+  )]
+  public function getUnreadMessagesCount(): JsonResponse
+  {
+    /** @var User $user */
+    $user = $this->getUser();
+
+    $count = $this->messageService->countUnreadMessages($user);
+
+    return $this->json(['count' => $count], Response::HTTP_OK);
+  }
 
   #[Route('/messages/predefined', name: 'api_predefined_messages', methods: ['GET'])]
   #[IsGranted('ROLE_USER')]

@@ -24,7 +24,7 @@ class ConversationRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('c')
             ->andWhere('c.seller = :user OR c.buyer = :user')
-            ->setParameter('user', $user)
+            ->setParameter('user', $user->getId())
             ->getQuery()
             ->getResult();
     }
@@ -35,7 +35,7 @@ class ConversationRepository extends ServiceEntityRepository
     public function findByOfferAndUsers(int $offerId, int $buyerId, int $sellerId): ?Conversation
     {
         $qb = $this->createQueryBuilder('c');
-        
+
         return $qb
             ->andWhere('c.offer = :offerId')
             ->andWhere('c.buyer = :buyerId')
