@@ -2,7 +2,9 @@
 
 namespace App\Repository;
 
+use App\Entity\Conversation;
 use App\Entity\Message;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,28 +18,55 @@ class MessageRepository extends ServiceEntityRepository
         parent::__construct($registry, Message::class);
     }
 
-    //    /**
-    //     * @return Message[] Returns an array of Message objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('m')
-    //            ->andWhere('m.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('m.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    /**
+     * Trouve les messages d'une conversation, par ordre chronologique
+     */
+    public function findByConversation(Conversation $conversation, int $limit = 50, int $offset = 0): array
+    {
+        return $this->createQueryBuilder('m')
+            ->andWhere('m.conversation = :conversation')
+            ->setParameter('conversation', $conversation)
+            ->orderBy('m.sentAt', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset)
+            ->getQuery()
+            ->getResult();
+    }
 
-    //    public function findOneBySomeField($value): ?Message
-    //    {
-    //        return $this->createQueryBuilder('m')
-    //            ->andWhere('m.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    /**
+     * Compte les messages non lus dans toutes les conversations d'un utilisateur
+     */
+    public function countUnreadByUser(User $user): int
+    {
+        return $this->createQueryBuilder('m')
+            ->select('COUNT(m.id)')
+            ->innerJoin('m.conversation', 'c')
+            ->innerJoin('c.participants', 'p')
+            ->andWhere('p = :user')
+            ->andWhere('m.sender != :user')
+            ->andWhere('m.isRead = :isRead')
+            ->setParameter('user', $user)
+            ->setParameter('isRead', false)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Marque tous les messages d'une conversation comme lus pour un utilisateur spécifique
+     */
+    public function markAsReadInConversation(Conversation $conversation, User $user): void
+    {
+        $this->createQueryBuilder('m')
+            ->update()
+            ->set('m.isRead', ':isRead')
+            ->andWhere('m.conversation = :conversation')
+            ->andWhere('m.sender != :user')
+            ->andWhere('m.isRead = :notRead')
+            ->setParameter('isRead', true)
+            ->setParameter('conversation', $conversation)
+            ->setParameter('user', $user)
+            ->setParameter('notRead', false)
+            ->getQuery()
+            ->execute();
+    }
 }
