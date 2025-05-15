@@ -28,11 +28,6 @@ class OAuthController extends AbstractController
     ) {
     }
 
-    private function generateTokenData($user)
-    {
-
-    }
-
     #[Route('/login/success', name: 'login_success')]
     public function connectSuccess(Request $request): Response
     {

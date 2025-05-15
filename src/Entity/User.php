@@ -98,9 +98,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $first_name = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $facebookId = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
     private ?string $googleId = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -268,18 +265,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setFirstName(?string $first_name): static
     {
         $this->first_name = $first_name;
-
-        return $this;
-    }
-
-    public function getFacebookId(): ?string
-    {
-        return $this->facebookId;
-    }
-
-    public function setFacebookId(?string $facebookId): static
-    {
-        $this->facebookId = $facebookId;
 
         return $this;
     }
