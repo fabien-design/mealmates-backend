@@ -74,9 +74,9 @@ class SavedSearchFiltersDenormalizer implements DenormalizerInterface, Denormali
                 }
             }
             
-            if (isset($filters['minSellerRating'])) {
-                $savedSearch->setMinSellerRating($filters['minSellerRating']);
-            }
+            // if (isset($filters['minSellerRating'])) {
+            //     $savedSearch->setMinSellerRating($filters['minSellerRating']);
+            // }
         }
     }
 

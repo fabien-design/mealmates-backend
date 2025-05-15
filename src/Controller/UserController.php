@@ -20,6 +20,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use SymfonyCasts\Bundle\VerifyEmail\Exception\VerifyEmailExceptionInterface;
 use OpenApi\Attributes as OA;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 #[Route('/api/v1')]
 class UserController extends AbstractController
@@ -194,7 +195,7 @@ class UserController extends AbstractController
             ]
         )
     )]
-    public function verifyEmail(Request $request, UserRepository $userRepository): JsonResponse
+    public function verifyEmail(Request $request, UserRepository $userRepository): Response
     {
         $id = $request->query->get('id');
 
@@ -224,9 +225,9 @@ class UserController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        return $this->json([
-            'message' => 'Email verified successfully'
-        ]);
+        $frontendUrl = $this->params->get('app.frontend_url');
+
+        return $this->redirect(`$frontendUrl/api/discover`);
     }
 
     #[Route('/resend-verification-email', name: 'app_resend_verification', methods: ['POST'])]
