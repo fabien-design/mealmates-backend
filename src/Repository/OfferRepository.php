@@ -78,10 +78,10 @@ class OfferRepository extends ServiceEntityRepository
                 ->setParameter('maxPrice', $filters['maxPrice']);
         }
 
-        if (isset($filters['minSellerRating']) && $filters['minSellerRating'] > 0) {
-            $qb->andWhere('s.rating >= :minSellerRating')
-                ->setParameter('minSellerRating', $filters['minSellerRating']);
-        }
+        // if (isset($filters['minSellerRating']) && $filters['minSellerRating'] > 0) {
+        //     $qb->andWhere('s.rating >= :minSellerRating')
+        //         ->setParameter('minSellerRating', $filters['minSellerRating']);
+        // }
 
         if (!empty($filters['expirationDate'])) {
             $today = new \DateTime('today');

@@ -91,13 +91,13 @@ class SavedSearchFiltersController extends AbstractController
                                 new OA\Property(property: 'max', type: 'number', format: 'float')
                             ]
                         ),
-                        new OA\Property(
-                            property: 'minSellerRating',
-                            type: 'number',
-                            format: 'float',
-                            minimum: 0,
-                            maximum: 5
-                        )
+                        // new OA\Property(
+                        //     property: 'minSellerRating',
+                        //     type: 'number',
+                        //     format: 'float',
+                        //     minimum: 0,
+                        //     maximum: 5
+                        // )
                     ]
                 )
             ]

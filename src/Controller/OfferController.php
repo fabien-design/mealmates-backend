@@ -34,7 +34,7 @@ class OfferController extends AbstractController
     #[OA\Parameter(name: 'expirationDate', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['today', 'tomorrow', 'week']))]
     #[OA\Parameter(name: 'minPrice', in: 'query', required: false, schema: new OA\Schema(type: 'number', format: 'float'))]
     #[OA\Parameter(name: 'maxPrice', in: 'query', required: false, schema: new OA\Schema(type: 'number', format: 'float'))]
-    #[OA\Parameter(name: 'minSellerRating', in: 'query', required: false, schema: new OA\Schema(type: 'number', format: 'float'))]
+    // #[OA\Parameter(name: 'minSellerRating', in: 'query', required: false, schema: new OA\Schema(type: 'number', format: 'float'))]
     #[OA\Parameter(name: 'dietaryPreferences', in: 'query', required: false, schema: new OA\Schema(type: 'string'))]
     public function getNearbyProducts(Request $request, OfferRepository $offerRepository, SerializerInterface $serializer): JsonResponse
     {
@@ -70,9 +70,9 @@ class OfferController extends AbstractController
             $filters['maxPrice'] = (float) $request->query->get('maxPrice');
         }
 
-        if ($request->query->has('minSellerRating')) {
-            $filters['minSellerRating'] = (float) $request->query->get('minSellerRating');
-        }
+        // if ($request->query->has('minSellerRating')) {
+        //     $filters['minSellerRating'] = (float) $request->query->get('minSellerRating');
+        // }
 
         if ($request->query->has('dietaryPreferences')) {
             $filters['dietaryPreferences'] = explode(',', $request->query->get('dietaryPreferences'));

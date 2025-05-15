@@ -51,10 +51,10 @@ class SavedSearchFilters
     #[Assert\Positive(message: "Le prix maximum doit être positif")]
     private ?float $maxPrice = null;
 
-    #[ORM\Column(nullable: true)]
-    #[Groups(['saved_search:read', 'saved_search:write'])]
-    #[Assert\Range(min: 0, max: 5, notInRangeMessage: "La note minimale du vendeur doit être comprise entre {{ min }} et {{ max }}")]
-    private ?float $minSellerRating = null;
+    // #[ORM\Column(nullable: true)]
+    // #[Groups(['saved_search:read', 'saved_search:write'])]
+    // #[Assert\Range(min: 0, max: 5, notInRangeMessage: "La note minimale du vendeur doit être comprise entre {{ min }} et {{ max }}")]
+    // private ?float $minSellerRating = null;
 
     #[ORM\Column(type: Types::JSON, nullable: true)]
     #[Groups(['saved_search:read', 'saved_search:write'])]
@@ -160,17 +160,17 @@ class SavedSearchFilters
         return $this;
     }
 
-    public function getMinSellerRating(): ?float
-    {
-        return $this->minSellerRating;
-    }
+    // public function getMinSellerRating(): ?float
+    // {
+    //     return $this->minSellerRating;
+    // }
 
-    public function setMinSellerRating(?float $minSellerRating): static
-    {
-        $this->minSellerRating = $minSellerRating;
+    // public function setMinSellerRating(?float $minSellerRating): static
+    // {
+    //     $this->minSellerRating = $minSellerRating;
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     public function getDietaryPreferences(): ?array
     {
