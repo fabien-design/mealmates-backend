@@ -33,7 +33,7 @@ class SavedSearchFiltersNormalizer implements NormalizerInterface
                     'min' => $data['minPrice'] ?? 0,
                     'max' => $data['maxPrice'] ?? 0,
                 ],
-                'minSellerRating' => $data['minSellerRating'] ?? 0,
+                // 'minSellerRating' => $data['minSellerRating'] ?? 0,
             ],
         ];
     }
