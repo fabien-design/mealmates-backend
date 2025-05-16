@@ -68,4 +68,34 @@ class MessageRepository extends ServiceEntityRepository
             ->getQuery()
             ->execute();
     }
+
+    /**
+     * Trouve les derniers messages pour un utilisateur depuis une timestamp donnée
+     */
+    public function findNewMessages(User $user, \DateTimeImmutable $since): array
+    {
+        return $this->createQueryBuilder('m')
+            ->innerJoin('m.conversation', 'c')
+            ->andWhere('(c.seller = :user OR c.buyer = :user)')
+            ->andWhere('m.createdAt > :since')
+            ->orderBy('m.createdAt', 'ASC')
+            ->setParameter('user', $user)
+            ->setParameter('since', $since)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find the latest message in a conversation
+     */
+    public function findLatestInConversation(Conversation $conversation): ?Message
+    {
+        return $this->createQueryBuilder('m')
+            ->andWhere('m.conversation = :conversation')
+            ->setParameter('conversation', $conversation)
+            ->orderBy('m.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

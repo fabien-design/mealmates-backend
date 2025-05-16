@@ -30,7 +30,6 @@
         "symfony/mailer": "7.2.*",
         "symfony/mailgun-mailer": "7.2.*",
         "symfony/mailtrap-mailer": "7.2.*",
-        "symfony/mercure-bundle": "^0.3.9",
         "symfony/property-access": "7.2.*",
         "symfony/property-info": "7.2.*",
         "symfony/runtime": "7.2.*",

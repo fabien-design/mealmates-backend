@@ -119,6 +119,63 @@ class MessageController extends AbstractController
     ]);
   }
 
+  #[Route('/conversations/{id}/messages/poll', name: 'api_conversation_messages_poll', methods: ['GET'])]
+  #[IsGranted('ROLE_USER')]
+  #[OA\Parameter(
+    name: 'id',
+    in: 'path',
+    description: 'ID de la conversation',
+    required: true,
+    schema: new OA\Schema(type: 'integer')
+  )]
+  #[OA\Parameter(
+    name: 'since',
+    in: 'query',
+    description: 'Timestamp de la dernière mise à jour (format Y-m-d H:i:s)',
+    required: true,
+    schema: new OA\Schema(type: 'string')
+  )]
+  #[OA\Response(
+    response: 200,
+    description: 'Nouveaux messages depuis le timestamp donné',
+    content: new OA\JsonContent(
+      type: 'array',
+      items: new OA\Items(ref: new Model(type: Message::class, groups: ['message:read']))
+    )
+  )]
+  public function pollMessages(int $id, Request $request): JsonResponse
+  {
+    /** @var User $user */
+    $user = $this->getUser();
+
+    $conversation = $this->conversationRepository->find($id);
+
+    if (!$conversation) {
+      return $this->json(['message' => 'Conversation not found'], Response::HTTP_NOT_FOUND);
+    }
+
+    if (!in_array($user, $conversation->getParticipants())) {
+      return $this->json(['message' => 'Access denied'], Response::HTTP_FORBIDDEN);
+    }
+
+    $since = $request->query->get('since');
+    if (!$since) {
+      return $this->json(['error' => 'Missing since parameter'], Response::HTTP_BAD_REQUEST);
+    }
+
+    try {
+      $sinceDate = new \DateTimeImmutable($since);
+    } catch (\Exception $e) {
+      return $this->json(['error' => 'Invalid date format'], Response::HTTP_BAD_REQUEST);
+    }
+
+    $messages = $this->messageService->getNewMessages($conversation, $user, $sinceDate);
+
+    return $this->json($messages, Response::HTTP_OK, [], [
+      'groups' => ['message:read', 'user:read']
+    ]);
+  }
+
   #[Route('/conversations/offer/{offerId}/with/{userId}', name: 'api_conversation_with_user', methods: ['GET'])]
   #[IsGranted('ROLE_USER')]
   #[OA\Parameter(

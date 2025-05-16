@@ -13,9 +13,6 @@ use App\Repository\OfferRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\Mercure\HubInterface;
-use Symfony\Component\Mercure\Update;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
 class MessageService
@@ -26,9 +23,7 @@ class MessageService
         private MessageRepository $messageRepository,
         private OfferRepository $offerRepository,
         private UserRepository $userRepository,
-        private SerializerInterface $serializer,
-        private HubInterface $hub,
-        private UrlGeneratorInterface $urlGenerator
+        private SerializerInterface $serializer
     ) {
     }
 
@@ -38,25 +33,25 @@ class MessageService
     public function getOrCreateConversation(int $offerId, int $buyerId, int $sellerId): Conversation
     {
         $conversation = $this->conversationRepository->findByOfferAndUsers($offerId, $buyerId, $sellerId);
-        
+
         if (!$conversation) {
             $offer = $this->offerRepository->find($offerId);
             $buyer = $this->userRepository->find($buyerId);
             $seller = $this->userRepository->find($sellerId);
-            
+
             if (!$offer || !$buyer || !$seller) {
                 throw new \InvalidArgumentException('Offre, acheteur ou vendeur non trouvé');
             }
-            
+
             $conversation = new Conversation();
             $conversation->setOffer($offer);
             $conversation->setBuyer($buyer);
             $conversation->setSeller($seller);
-            
+
             $this->entityManager->persist($conversation);
             $this->entityManager->flush();
         }
-        
+
         return $conversation;
     }
 
@@ -64,10 +59,10 @@ class MessageService
      * Envoie un nouveau message dans une conversation
      */
     public function sendMessage(
-      Conversation $conversation, 
-      User $sender, 
-      string $content, 
-      ?array $imageFiles = null
+        Conversation $conversation,
+        User $sender,
+        string $content,
+        ?array $imageFiles = null
     ): Message {
         $message = new Message();
         $message->setConversation($conversation);
@@ -75,7 +70,7 @@ class MessageService
         $message->setContent($content);
         $message->setCreatedAt(new \DateTimeImmutable());
         $message->setIsRead(false);
-        
+
         if ($imageFiles) {
             foreach ($imageFiles as $imageFile) {
                 if (!$imageFile instanceof UploadedFile) {
@@ -89,13 +84,10 @@ class MessageService
                 $message->addImage($newImage);
             }
         }
-        
+
         $this->entityManager->persist($message);
         $this->entityManager->flush();
-        
-        // Publication de l'événement via Mercure
-        $this->publishMessageEvent($message);
-        
+
         return $message;
     }
 
@@ -108,82 +100,38 @@ class MessageService
     }
 
     /**
+     * Get new messages in a conversation since a specific timestamp
+     */
+    public function getNewMessages(Conversation $conversation, User $user, \DateTimeImmutable $since): array
+    {
+        if (!in_array($user, $conversation->getParticipants())) {
+            throw new \InvalidArgumentException('User is not a participant in this conversation');
+        }
+
+        return $this->messageRepository->findNewMessages($user, $since);
+    }
+
+    /**
      * Marque les messages d'une conversation comme lus pour un utilisateur
      */
     public function markMessagesAsRead(Conversation $conversation, User $user): void
     {
         $this->messageRepository->markAsReadInConversation($conversation, $user);
         $this->entityManager->flush();
-        
-        // Publier un événement pour mettre à jour l'interface utilisateur
-        $this->publishReadStatusEvent($conversation, $user);
-    }
-
-    /**
-     * Publie un message dans le Hub Mercure
-     */
-    private function publishMessageEvent(Message $message): void
-    {
-        $serializedMessage = $this->serializer->serialize($message, 'json', [
-            'groups' => ['message:read', 'user:read']
-        ]);
-
-        $topics = [];
-        foreach ($message->getConversation()->getParticipants() as $participant) {
-            $topics[] = $this->urlGenerator->generate('api_user_messages', [
-                'id' => $participant->getId()
-            ], UrlGeneratorInterface::ABSOLUTE_URL);
-        }
-        
-        // Ajout d'un topic spécifique à la conversation
-        $topics[] = $this->urlGenerator->generate('api_conversation_messages', [
-            'id' => $message->getConversation()->getId()
-        ], UrlGeneratorInterface::ABSOLUTE_URL);
-        
-        $update = new Update(
-            $topics,
-            $serializedMessage,
-            true
-        );
-        
-        $this->hub->publish($update);
-    }
-
-    /**
-     * Publie un événement de mise à jour du statut de lecture
-     */
-    private function publishReadStatusEvent(Conversation $conversation, User $user): void
-    {
-        $data = [
-            'conversation_id' => $conversation->getId(),
-            'user_id' => $user->getId(),
-            'type' => 'read_status_update',
-            'timestamp' => (new \DateTimeImmutable())->format('Y-m-d H:i:s')
-        ];
-        
-        $topics = [];
-        foreach ($conversation->getParticipants() as $participant) {
-            $topics[] = $this->urlGenerator->generate('api_user_messages', [
-                'id' => $participant->getId()
-            ], UrlGeneratorInterface::ABSOLUTE_URL);
-        }
-        
-        $topics[] = $this->urlGenerator->generate('api_conversation_messages', [
-            'id' => $conversation->getId()
-        ], UrlGeneratorInterface::ABSOLUTE_URL);
-        
-        $update = new Update(
-            $topics,
-            json_encode($data),
-            true
-        );
-        
-        $this->hub->publish($update);
     }
 
     public function countUnreadMessages(User $user): int
     {
         return $this->messageRepository->countUnreadByUser($user);
+    }
+
+    /**
+     * Get the timestamp of the latest message in a conversation
+     */
+    public function getLatestMessageTimestamp(Conversation $conversation): ?string
+    {
+        $latestMessage = $this->messageRepository->findLatestInConversation($conversation);
+        return $latestMessage ? $latestMessage->getCreatedAt()->format('Y-m-d H:i:s') : null;
     }
 
     public function getPredefinedMessages(): array
