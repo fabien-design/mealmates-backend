@@ -41,6 +41,8 @@ class Conversation
     #[Groups(['conversation:read'])]
     private ?User $seller = null;
 
+    #[Groups(['conversation:read'])]
+    private int $unreadCount = 0;
     public function __construct()
     {
         $this->messages = new ArrayCollection();
@@ -120,5 +122,19 @@ class Conversation
     public function getParticipants(): array
     {
         return [$this->buyer, $this->seller];
+    }
+    public function setUnreadCount(User $loggedUser): void
+    {
+        $count = 0;
+        foreach ($this->messages as $message) {
+            if ($message->getSender() !== $loggedUser && !$message->isRead()) {
+                $count++;
+            }
+        }
+        $this->unreadCount = $count;
+    }
+    public function getUnreadCount(): int
+    {
+        return $this->unreadCount;
     }
 }

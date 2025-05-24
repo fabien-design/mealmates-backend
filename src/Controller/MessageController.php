@@ -46,6 +46,9 @@ class MessageController extends AbstractController
     $user = $this->getUser();
 
     $conversations = $this->conversationRepository->findByUser($user);
+    foreach ($conversations as $conversation) {
+      $conversation->setUnreadCount($user);
+    }
 
     return $this->json($conversations, Response::HTTP_OK, [], [
       'groups' => ['conversation:read', 'offer:read']
@@ -106,7 +109,7 @@ class MessageController extends AbstractController
       return $this->json(['message' => 'Access denied'], Response::HTTP_FORBIDDEN);
     }
 
-    $limit = $request->query->getInt('limit', 50);
+    $limit = $request->query->getInt('limit', 300);
     $offset = $request->query->getInt('offset', 0);
 
     $messages = $this->messageService->getMessages($conversation, $limit, $offset);
@@ -115,7 +118,7 @@ class MessageController extends AbstractController
     $this->messageService->markMessagesAsRead($conversation, $user);
 
     return $this->json($messages, Response::HTTP_OK, [], [
-      'groups' => ['message:read', 'user:read']
+      'groups' => ['message:read', 'image:read']
     ]);
   }
 
@@ -265,7 +268,7 @@ class MessageController extends AbstractController
     }
 
     $content = $request->request->get('content');
-    $imageFile = $request->files->get('image');
+    $imageFile = $request->files->get('images');
 
     // Vérification qu'au moins un contenu est fourni
     if (empty($content) && !$imageFile) {

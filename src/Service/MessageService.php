@@ -61,7 +61,7 @@ class MessageService
     public function sendMessage(
         Conversation $conversation,
         User $sender,
-        string $content,
+        ?string $content,
         ?array $imageFiles = null
     ): Message {
         $message = new Message();
@@ -70,7 +70,6 @@ class MessageService
         $message->setContent($content);
         $message->setCreatedAt(new \DateTimeImmutable());
         $message->setIsRead(false);
-
         if ($imageFiles) {
             foreach ($imageFiles as $imageFile) {
                 if (!$imageFile instanceof UploadedFile) {

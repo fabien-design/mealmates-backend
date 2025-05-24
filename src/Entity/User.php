@@ -20,7 +20,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['user:read', 'address:read', 'allergen:read', 'food_preference:read', 'conversation:read', 'offer:read'])]
+    #[Groups(['user:read', 'address:read', 'allergen:read', 'food_preference:read', 'conversation:read', 'offer:read', 'message:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
@@ -76,7 +76,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['user:read', 'user:write', 'user:profile', 'offer:read', 'conversation:read'])]
+    #[Groups(['user:read', 'user:write', 'user:profile', 'offer:read', 'conversation:read', 'message:read'])]
     #[Assert\NotBlank(message: "Le nom ne peut pas être vide")]
     #[Assert\Length(
         min: 2,
@@ -87,7 +87,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $last_name = null;
 
     #[ORM\Column(length: 50, nullable: false)]
-    #[Groups(['user:read', 'user:write', 'user:profile', 'offer:read', 'conversation:read'])]
+    #[Groups(['user:read', 'user:write', 'user:profile', 'offer:read', 'conversation:read', 'message:read'])]
     #[Assert\NotBlank(message: "Le prénom ne peut pas être vide")]
     #[Assert\Length(
         min: 2,
