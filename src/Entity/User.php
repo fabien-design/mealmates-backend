@@ -269,6 +269,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getFullName(): string
+    {
+        $lastNameInitial = $this->last_name ? strtoupper($this->last_name[0]) . '.' : '';
+        return trim(sprintf('%s %s', $this->first_name ?? '', $lastNameInitial));
+    }
+
     public function getGoogleId(): ?string
     {
         return $this->googleId;

@@ -104,7 +104,6 @@ class SendExpiryAlertsCommand extends Command
 
         $notification = new Notification();
         $notification->setUser($seller);
-        $notification->setTitle('Votre offre expire bientôt !');
         $notification->setContent($content);
         $notification->setType('expiry_alert');
         $notification->setIsRead(false);

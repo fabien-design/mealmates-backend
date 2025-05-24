@@ -42,9 +42,9 @@ class Offer
     #[Groups('offer:read')]
     private ?float $dynamicPrice = null;
 
-    #[ORM\Column]
+    #[ORM\Column(type: Types::INTEGER, nullable: true)]
     #[Groups('offer:read')]
-    private ?bool $hasBeenSold = null;
+    private ?int $soldAt = null;
 
     /**
      * @var Collection<int, Allergen>
@@ -175,14 +175,14 @@ class Offer
         return $this;
     }
 
-    public function hasBeenSold(): ?bool
+    public function getSoldAt(): ?int
     {
-        return $this->hasBeenSold;
+        return $this->soldAt;
     }
 
-    public function setHasBeenSold(bool $hasBeenSold): static
+    public function setSoldAt(int $soldAt): static
     {
-        $this->hasBeenSold = $hasBeenSold;
+        $this->soldAt = $soldAt;
 
         return $this;
     }
