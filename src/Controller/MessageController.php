@@ -109,7 +109,7 @@ class MessageController extends AbstractController
       return $this->json(['message' => 'Access denied'], Response::HTTP_FORBIDDEN);
     }
 
-    $limit = $request->query->getInt('limit', 300);
+    $limit = $request->query->getInt('limit', 150);
     $offset = $request->query->getInt('offset', 0);
 
     $messages = $this->messageService->getMessages($conversation, $limit, $offset);
