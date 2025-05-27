@@ -20,7 +20,6 @@ class Conversation
     /**
      * @var Collection<int, Message>
      */
-    #[Groups(['conversation:read'])]
     #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'conversation', orphanRemoval: true)]
     private Collection $messages;
 
@@ -43,6 +42,9 @@ class Conversation
 
     #[Groups(['conversation:read'])]
     private int $unreadCount = 0;
+
+    #[Groups(['conversation:read'])]
+    private ?Message $lastMessage = null;
     public function __construct()
     {
         $this->messages = new ArrayCollection();
@@ -136,5 +138,15 @@ class Conversation
     public function getUnreadCount(): int
     {
         return $this->unreadCount;
+    }
+    public function getLastMessage(): ?Message
+    {
+        return $this->lastMessage;
+    }
+    public function setLastMessage(?Message $lastMessage): static
+    {
+        $this->lastMessage = $lastMessage;
+
+        return $this;
     }
 }

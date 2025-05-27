@@ -30,6 +30,21 @@ class ConversationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Trouve toutes les conversations d'un utilisateur avec le dernier message associé
+     */
+    public function findConversationsByUserWithLatestMessage(User $user): array
+    {
+        $qb = $this->createQueryBuilder('c')
+            ->leftJoin('c.messages', 'm')
+            ->andWhere('c.seller = :user OR c.buyer = :user')
+            ->setParameter('user', $user)
+            ->groupBy('c.id')
+            ->orderBy('MAX(m.createdAt)', 'DESC');
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
      * Trouve une conversation entre un acheteur et un vendeur à propos d'une offre
      */
     public function findByOfferAndUsers(int $offerId, int $buyerId, int $sellerId): ?Conversation

@@ -45,13 +45,17 @@ class MessageController extends AbstractController
     /** @var User $user */
     $user = $this->getUser();
 
-    $conversations = $this->conversationRepository->findByUser($user);
+    $conversations = $this->conversationRepository->findConversationsByUserWithLatestMessage($user);
     foreach ($conversations as $conversation) {
       $conversation->setUnreadCount($user);
+      $latestMessage = $this->messageService->getLatestMessage($conversation);
+      if ($latestMessage) {
+        $conversation->setLastMessage($latestMessage);
+      }
     }
 
     return $this->json($conversations, Response::HTTP_OK, [], [
-      'groups' => ['conversation:read', 'offer:read']
+      'groups' => ['conversation:read', 'offer:read', 'message:read']
     ]);
   }
 

@@ -19,11 +19,11 @@ class Message
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['message:read'])]
+    #[Groups(['message:read', "conversation:read"])]
     private ?string $content = null;
 
     #[ORM\Column]
-    #[Groups(['message:read'])]
+    #[Groups(['message:read', "conversation:read"])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\ManyToOne]
@@ -33,7 +33,6 @@ class Message
 
     #[ORM\ManyToOne(inversedBy: 'messages')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['message:read'])]
     private ?Conversation $conversation = null;
 
     /**

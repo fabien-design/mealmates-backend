@@ -125,13 +125,14 @@ class MessageService
     }
 
     /**
-     * Get the timestamp of the latest message in a conversation
+     * Get the latest message in a conversation
      */
-    public function getLatestMessageTimestamp(Conversation $conversation): ?string
+    public function getLatestMessage(Conversation $conversation): ?Message
     {
-        $latestMessage = $this->messageRepository->findLatestInConversation($conversation);
-        return $latestMessage ? $latestMessage->getCreatedAt()->format('Y-m-d H:i:s') : null;
+        return $this->messageRepository->findLatestInConversation($conversation);
     }
+
+
 
     public function getPredefinedMessages(): array
     {
