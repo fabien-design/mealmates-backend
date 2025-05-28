@@ -1,5 +1,10 @@
 # MealMates
 
+### Initialisation du projet 
+```bash
+    make install
+```
+
 ### JWT generer ses clés:
 ```bash
     make generate-keys
