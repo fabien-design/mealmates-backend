@@ -88,6 +88,12 @@ class Offer
     #[ORM\Column(options: ['default' => false])]
     private ?bool $expiryAlertSent = null;
 
+    /**
+     * @var Collection<int, Conversation>
+     */
+    #[ORM\OneToMany(targetEntity: Conversation::class, mappedBy: 'offer')]
+    private Collection $conversations;
+
     public function __construct()
     {
         $this->allergens = new ArrayCollection();
@@ -96,6 +102,7 @@ class Offer
         if (!isset($this->expiryAlertSent)) {
             $this->expiryAlertSent = false;
         }
+        $this->conversations = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -321,6 +328,36 @@ class Offer
     public function setExpiryAlertSent(bool $expiryAlertSent): static
     {
         $this->expiryAlertSent = $expiryAlertSent;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Conversation>
+     */
+    public function getConversations(): Collection
+    {
+        return $this->conversations;
+    }
+
+    public function addConversation(Conversation $conversation): static
+    {
+        if (!$this->conversations->contains($conversation)) {
+            $this->conversations->add($conversation);
+            $conversation->setOffer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeConversation(Conversation $conversation): static
+    {
+        if ($this->conversations->removeElement($conversation)) {
+            // set the owning side to null (unless already changed)
+            if ($conversation->getOffer() === $this) {
+                $conversation->setOffer(null);
+            }
+        }
 
         return $this;
     }

@@ -40,5 +40,6 @@ services:
   mailbox:
     image: mailhog/mailhog
 
+
 volumes:
   db-data:
