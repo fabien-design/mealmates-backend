@@ -19,12 +19,17 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use App\Entity\Offer;
 use App\Entity\Image;
+use App\Service\StripeService;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 #[Route('/api/v1')]
 class OfferController extends AbstractController
 {
+    public function __construct(private StripeService $stripe)
+    {
+    }
+
     #[Route('/products/nearby', name: 'api_products_nearby', methods: ['GET'])]
     #[OA\Tag(name: 'Offres')]
     #[OA\Parameter(name: 'lat', in: 'query', required: true, schema: new OA\Schema(type: 'number', format: 'float'))]
@@ -107,9 +112,14 @@ class OfferController extends AbstractController
             ]
         );
         $offer->setSeller($this->getUser());
-        $offer->setHasBeenSold(false);
         $offer->setDynamicPrice($offer->getPrice());
         $offer->setBuyer(null);
+
+        $stripeOffert = $this->stripe->createOffer($offer);
+        $offer->setStripeProductId($stripeOffert->id);
+        $stripePrice = $this->stripe->createPrice($offer);
+        $offer->setStripePriceId($stripePrice->id);
+
         if (count($data['allergens']) > 0) {
             foreach ($data['allergens'] as $allergen) {
                 $offer->addAllergen($allergenRepository->find($allergen));

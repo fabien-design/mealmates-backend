@@ -22,7 +22,7 @@ class OfferRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('o')
             ->join('o.address', 'a')
             ->join('o.seller', 's')
-            ->where('o.hasBeenSold = false');
+            ->where('o.soldAt IS NULL');
 
         $this->applyFilters($qb, $filters);
 
@@ -147,7 +147,7 @@ class OfferRepository extends ServiceEntityRepository
         $today = new \DateTime('today');
         return $this->createQueryBuilder('o')
             ->andWhere('o.expiryDate = :today')
-            ->andWhere('o.hasBeenSold = false')
+            ->andWhere('o.soldAt IS NULL')
             ->setParameter('today', $today)
             ->getQuery()
             ->getResult();
@@ -157,7 +157,7 @@ class OfferRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('o')
             ->andWhere('o.name = :category')
-            ->andWhere('o.hasBeenSold = false')
+            ->andWhere('o.soldAt IS NULL')
             ->setParameter('category', $category)
             ->getQuery()
             ->getResult();
@@ -168,7 +168,7 @@ class OfferRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('o')
             ->join('o.seller', 's')
             ->where('o.expiryDate BETWEEN :today AND :expiry_date')
-            ->andWhere('o.hasBeenSold = false')
+            ->andWhere('o.soldAt IS NULL')
             ->andWhere('o.expiryAlertSent = false')
             ->setParameter('today', new \DateTime('today'))
             ->setParameter('expiry_date', $expiryDate)

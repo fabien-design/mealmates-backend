@@ -42,9 +42,9 @@ class Offer
     #[Groups('offer:read')]
     private ?float $dynamicPrice = null;
 
-    #[ORM\Column(type: Types::INTEGER, nullable: true)]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     #[Groups('offer:read')]
-    private ?int $soldAt = null;
+    private ?\DateTime $soldAt = null;
 
     /**
      * @var Collection<int, Allergen>
@@ -88,6 +88,13 @@ class Offer
     #[ORM\Column(options: ['default' => false])]
     private ?bool $expiryAlertSent = null;
 
+
+    #[ORM\Column(nullable: true)]
+    private ?string $stripeProductId = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $stripePriceId = null;
+
     /**
      * @var Collection<int, Conversation>
      */
@@ -109,6 +116,12 @@ class Offer
     {
         return $this->id;
     }
+
+    public function isActive(): bool
+    {
+        return $this->expiryDate > new \DateTime() && $this->soldAt === null;
+    }
+
 
     public function getName(): ?string
     {
@@ -182,12 +195,12 @@ class Offer
         return $this;
     }
 
-    public function getSoldAt(): ?int
+    public function getSoldAt(): ?\DateTime
     {
         return $this->soldAt;
     }
 
-    public function setSoldAt(int $soldAt): static
+    public function setSoldAt(\DateTime $soldAt): static
     {
         $this->soldAt = $soldAt;
 
@@ -358,6 +371,30 @@ class Offer
                 $conversation->setOffer(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getStripeProductId(): ?string
+    {
+        return $this->stripeProductId;
+    }
+
+    public function setStripeProductId(?string $stripeProductId): static
+    {
+        $this->stripeProductId = $stripeProductId;
+
+        return $this;
+    }
+
+    public function getStripePriceId(): ?string
+    {
+        return $this->stripePriceId;
+    }
+
+    public function setStripePriceId(?string $stripePriceId): static
+    {
+        $this->stripePriceId = $stripePriceId;
 
         return $this;
     }
