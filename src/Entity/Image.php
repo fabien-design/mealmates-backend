@@ -7,6 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
+use OpenApi\Attributes as OA;
 
 #[ORM\Entity(repositoryClass: ImageRepository::class)]
 #[Vich\Uploadable]
@@ -19,6 +20,7 @@ class Image
     private ?int $id = null;
 
     #[Vich\UploadableField(mapping: 'files', fileNameProperty: 'name', size: 'size')]
+    #[OA\Property(type: "string", format: "binary")] // fix OpenAPI documentation
     private ?File $file = null;
 
     #[ORM\Column(length: 255, nullable: true)]
