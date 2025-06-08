@@ -2,9 +2,11 @@
 
 namespace App\Controller;
 
+use App\Entity\Transaction;
 use App\Entity\User;
+use App\Enums\TransactionStatus;
 use App\Repository\OfferRepository;
-use App\Repository\UserRepository;
+use App\Repository\TransactionRepository;
 use App\Service\StripeService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,14 +21,14 @@ use Stripe\Webhook;
 use Stripe\Exception\SignatureVerificationException;
 
 #[Route('/api/v1/payments')]
-#[OA\Tag(name: 'Paiements')]
+#[OA\Tag(name: 'Paiements C2C')]
 class PaymentController extends AbstractController
 {
     public function __construct(
         private StripeService $stripeService,
         private EntityManagerInterface $entityManager,
         private OfferRepository $offerRepository,
-        private UserRepository $userRepository
+        private TransactionRepository $transactionRepository
     ) {
         Stripe::setApiKey($_ENV['STRIPE_API_SECRET']);
     }
@@ -67,18 +69,10 @@ class PaymentController extends AbstractController
                 'message' => 'Cette offre a déjà été vendue'
             ], Response::HTTP_BAD_REQUEST);
         }
-        
-        // Vérifier que le vendeur a un compte Stripe Connect actif
-        $seller = $offer->getSeller();
-        if (!$seller || !$seller->getStripeConnectId()) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Le vendeur n\'est pas configuré pour recevoir des paiements'
-            ], Response::HTTP_BAD_REQUEST);
-        }
 
         /** @var User $buyer */
         $buyer = $this->getUser();
+        $seller = $offer->getSeller();
 
         if ($buyer->getId() === $seller->getId()) {
             return $this->json([
@@ -88,9 +82,7 @@ class PaymentController extends AbstractController
         }
         
         try {
-            /** @var User $user */
-            $user = $this->getUser();
-            $checkoutUrl = $this->stripeService->generatePaimentLink($offer, $user);
+            $checkoutUrl = $this->stripeService->generatePaymentLink($offer, $buyer);
             
             return $this->json([
                 'success' => true,
@@ -116,7 +108,6 @@ class PaymentController extends AbstractController
         }
         
         try {
-            // Vérifier la signature du webhook
             $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
         } catch (\UnexpectedValueException $e) {
             return new Response('Payload invalide', Response::HTTP_BAD_REQUEST);
@@ -124,26 +115,14 @@ class PaymentController extends AbstractController
             return new Response('Signature invalide', Response::HTTP_BAD_REQUEST);
         }
         
-        // Gérer les différents types d'événements
         switch ($event->type) {
             case 'checkout.session.completed':
                 $session = $event->data->object;
-                
-                // Extraire les métadonnées
-                if (isset($session->metadata->offer_id) && isset($session->metadata->buyer_id)) {
-                    $offerId = $session->metadata->offer_id;
-                    $buyerId = $session->metadata->buyer_id;
-                    
-                    // Traitement de l'achat
-                    $this->processSuccessfulPayment($offerId, $buyerId);
-                }
+                $this->processSuccessfulPayment($session);
                 break;
                 
             case 'payment_intent.succeeded':
-                // Gérer les intents réussis si nécessaire
                 break;
-                
-            // Vous pouvez ajouter d'autres types d'événements selon vos besoins
         }
         
         return new Response('Webhook reçu et traité avec succès', Response::HTTP_OK);
@@ -165,16 +144,6 @@ class PaymentController extends AbstractController
         required: true,
         schema: new OA\Schema(type: 'string')
     )]
-    #[OA\Response(
-        response: 200,
-        description: 'Confirmation du paiement',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'success', type: 'boolean', example: true),
-                new OA\Property(property: 'message', type: 'string', example: 'Paiement réussi ! L\'offre est maintenant à vous.')
-            ]
-        )
-    )]
     public function confirmPayment(int $id, Request $request): JsonResponse
     {
         $sessionId = $request->query->get('session_id');
@@ -194,20 +163,16 @@ class PaymentController extends AbstractController
         }
         
         try {
-            // Vérifier l'état de la session de paiement
             $session = $this->stripeService->getStripe()->checkout->sessions->retrieve($sessionId);
             
             if ($session->payment_status === 'paid') {
-                /** @var User $buyer */
-                $buyer = $this->getUser();
-                // Si le webhook n'a pas encore été traité, marquer l'offre comme vendue
                 if ($offer->getSoldAt() === null) {
-                    $this->processSuccessfulPayment($id, $buyer->getId());
+                    $this->processSuccessfulPayment($session);
                 }
                 
                 return $this->json([
                     'success' => true,
-                    'message' => 'Paiement réussi ! L\'offre est maintenant à vous.'
+                    'message' => 'Paiement réussi ! L\'offre est maintenant à vous. Le vendeur recevra l\'argent une fois la transaction confirmée.'
                 ]);
             } else {
                 return $this->json([
@@ -222,29 +187,140 @@ class PaymentController extends AbstractController
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-    
-    /**
-     * Traite un paiement réussi en marquant l'offre comme vendue
-     */
-    private function processSuccessfulPayment(int $offerId, int $buyerId): void
+
+    #[Route('/transactions/{id}/confirm', name: 'api_transaction_confirm', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'ID de la transaction à confirmer',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Transaction confirmée et argent transféré au vendeur'
+    )]
+    public function confirmTransaction(int $id): JsonResponse
     {
-        $offer = $this->offerRepository->find($offerId);
-        $buyer = $this->userRepository->find($buyerId);
+        /** @var User $user */
+        $user = $this->getUser();
+        $transaction = $this->transactionRepository->find($id);
+
+        if (!$transaction) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Transaction non trouvée'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($transaction->getBuyer()->getId() !== $user->getId()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Vous n\'êtes pas autorisé à confirmer cette transaction'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        if (!$transaction->isPending()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Cette transaction ne peut plus être confirmée'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($this->stripeService->transferToSeller($transaction)) {
+            return $this->json([
+                'success' => true,
+                'message' => 'Transaction confirmée ! Le vendeur a reçu le paiement.'
+            ]);
+        } else {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors du transfert au vendeur'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/transactions/{id}/refund', name: 'api_transaction_refund', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'ID de la transaction à rembourser',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    public function refundTransaction(int $id, Request $request): JsonResponse
+    {
+        // @todo: Implementer cette fonctionnalité - si on a le temps
+    
+        /** @var User $user */
+        $user = $this->getUser();
+        $transaction = $this->transactionRepository->find($id);
+
+        if (!$transaction) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Transaction non trouvée'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($transaction->getBuyer()->getId() !== $user->getId() && !in_array('ROLE_ADMIN', $user->getRoles())) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Vous n\'êtes pas autorisé à rembourser cette transaction'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        if ($transaction->isCompleted() || $transaction->isRefunded()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Cette transaction ne peut plus être remboursée'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $reason = $data['reason'] ?? null;
+
+        if ($this->stripeService->refundTransaction($transaction, $reason)) {
+            return $this->json([
+                'success' => true,
+                'message' => 'Transaction remboursée avec succès'
+            ]);
+        } else {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors du remboursement'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private function processSuccessfulPayment($session): void
+    {
+        $offerId = $session->metadata->offer_id;
+        $buyerId = $session->metadata->buyer_id ?? null;
+        $sellerId = $session->metadata->seller_id;
         
-        if (!$offer || !$buyer) {
+        $offer = $this->offerRepository->find($offerId);
+        if (!$offer || !$buyerId) {
             return;
         }
-        
-        // Mettre à jour l'offre
-        $offer->setBuyer($buyer);
+
+        $transaction = new Transaction();
+        $transaction->setOffer($offer);
+        $transaction->setBuyer($this->entityManager->getReference(User::class, $buyerId));
+        $transaction->setSeller($this->entityManager->getReference(User::class, $sellerId));
+        $transaction->setAmount($session->amount_total / 100);
+        $transaction->setStatus(TransactionStatus::PENDING);
+        $transaction->setStripeSessionId($session->id);
+        $transaction->setStripePaymentIntentId($session->payment_intent);
+        $transaction->setCreatedAt(new \DateTimeImmutable());
+
+        $offer->setBuyer($transaction->getBuyer());
         $offer->setSoldAt(new \DateTime());
         
+        $this->entityManager->persist($transaction);
         $this->entityManager->persist($offer);
         $this->entityManager->flush();
-        
-        // Ici vous pourriez également:
-        // - Envoyer une notification au vendeur
-        // - Envoyer un email de confirmation à l'acheteur
-        // - Créer une entrée dans l'historique des transactions
     }
 }

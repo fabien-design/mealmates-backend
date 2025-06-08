@@ -2,98 +2,51 @@
 
 namespace App\Service;
 
-use App\Entity\Image;
 use App\Entity\Offer;
 use App\Entity\User;
 use Stripe\StripeClient;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\Transaction;
+use App\Enums\TransactionStatus;
+use Psr\Log\LoggerInterface;
 
 final class StripeService {
 
     private StripeClient $stripe;
     private const PLATFORM_FEE_PERCENTAGE = 10; // on fait raquer 10%
 
-    public function __construct(private ParameterBagInterface $parameterBag)
-    {
+    public function __construct(
+        private ParameterBagInterface $parameterBag,
+        private EntityManagerInterface $entityManager,
+        private LoggerInterface $logger,
+    ) {
     }
 
-    public function createOffer(Offer $offer): \Stripe\Product
+    public function generatePaymentLink(Offer $offer, ?User $buyer = null): string
     {
-        return $this->getStripe()->products->create([
-            'name' => $offer->getName(),
-            'description' => $offer->getDescription(),
-            'active' => $offer->isActive(),
-            'images' => $offer->getImages()->map(fn(Image $image) => "{$this->parameterBag->get('app.frontend_url')}/{$image->getName()}")->toArray(),
-        ]);
-    }
-
-    public function createPrice(Offer $offer): \Stripe\Price
-    {
-        // Convertir le prix en centimes (1€ = 100 centimes)
         $priceInCents = (int)($offer->getPrice() * 100);
         
-        return $this->getStripe()->prices->create([
-            'unit_amount' => $priceInCents,
-            'currency' => 'eur',
-            'product' => $offer->getStripeProductId(),    
-        ]);
-    }
-
-    public function updateOffer(Offer $offer): \Stripe\Product
-    {
-        return $this->getStripe()->products->update(
-            $offer->getStripeProductId(),
-            [
-                'name' => $offer->getName(),
-                'description' => $offer->getDescription(),
-                'active' => $offer->isActive(),
-                'images' => $offer->getImages()->map(fn(Image $image) => "{$this->parameterBag->get('app.frontend_url')}/{$image->getName()}")->toArray(),
-            ]
-        );
-    }
-
-    public function updatePrice(Offer $offer): \Stripe\Price
-    {
-        // Convertir le prix en centimes (1€ = 100 centimes)
-        $priceInCents = (int)($offer->getPrice() * 100);
-        
-        return $this->getStripe()->prices->update(
-            $offer->getStripePriceId(),
-            [
-                'unit_amount' => $priceInCents,
-                'currency' => 'eur',
-            ]
-        );
-    }
-
-    /**
-     * Génère un lien de paiement avec transfert au vendeur via Stripe Connect
-     */
-    public function generatePaimentLink(Offer $offer, ?User $buyer = null): string
-    {
-        $seller = $offer->getSeller();
-        $sellerStripeAccountId = $seller->getStripeConnectId();
-        
-        if (!$sellerStripeAccountId) {
-            throw new \Exception('Le vendeur n\'a pas de compte Stripe Connect lié');
-        }
-
-        $priceInCents = (int)($offer->getPrice() * 100);
-        $applicationFeeAmount = (int)($priceInCents * self::PLATFORM_FEE_PERCENTAGE / 100);
-
         $lineItems = [
             [
-                'price' => $offer->getStripePriceId(),
+                'price_data' => [
+                    'currency' => 'eur',
+                    'product_data' => [
+                        'name' => $offer->getName(),
+                        'description' => $offer->getDescription(),
+                    ],
+                    'unit_amount' => $priceInCents,
+                ],
                 'quantity' => 1,
             ],
         ];
         
         $metadata = [
             'offer_id' => $offer->getId(),
-            'seller_id' => $seller->getId(),
+            'seller_id' => $offer->getSeller()->getId(),
+            'type' => 'c2c_purchase',
         ];
         
-        // Ajouter l'ID de l'acheteur s'il est fourni
         if ($buyer) {
             $metadata['buyer_id'] = $buyer->getId();
         }
@@ -101,102 +54,179 @@ final class StripeService {
         $session = $this->getStripe()->checkout->sessions->create([
             'line_items' => $lineItems,
             'mode' => 'payment',
-            'payment_intent_data' => [
-                'application_fee_amount' => $applicationFeeAmount,
-                'transfer_data' => [
-                    'destination' => $sellerStripeAccountId,
-                ],
-            ],
             'metadata' => $metadata,
-            'success_url' => "{$this->parameterBag->get('app.frontend_url')}/offer/{$offer->getId()}/success?session_id={CHECKOUT_SESSION_ID}",
+            'success_url' => "{$this->parameterBag->get('app.backend_url')}/api/v1/payments/success/{$offer->getId()}?session_id={CHECKOUT_SESSION_ID}",
             'cancel_url' => "{$this->parameterBag->get('app.frontend_url')}/offer/{$offer->getId()}/cancel",
+            'payment_intent_data' => [
+                'description' => "Achat MealMates: {$offer->getName()}",
+                'metadata' => $metadata,
+            ]
         ]);
 
         return $session->url;
     }
 
-    public function deleteOffer(Offer $offer): void
+    public function processPayment(string $sessionId): ?Transaction
     {
-        $this->getStripe()->products->delete($offer->getStripeProductId());
-    }
-
-    public function createConnectAccount(User $user): \Stripe\Account
-    {
-        $account = $this->getStripe()->accounts->create([
-            'type' => 'express',
-            'country' => 'FR',
-            'email' => $user->getEmail(),
-            'capabilities' => [
-                'transfers' => ['requested' => true],
-                'card_payments' => ['requested' => true],
-            ],
-            'business_type' => 'individual',
-            'business_profile' => [
-                'name' => $user->getFullName(),
-                'product_description' => 'Vente de produits alimentaires sur MealMates',
-            ],
-        ]);
+        $session = $this->getStripe()->checkout->sessions->retrieve($sessionId);
         
-        return $account;
+        if ($session->payment_status !== 'paid') {
+            return null;
+        }
+
+        $offerId = $session->metadata->offer_id;
+        $sellerId = $session->metadata->seller_id;
+        $buyerId = $session->metadata->buyer_id ?? null;
+
+        $transaction = new Transaction();
+        $transaction->setStripeSessionId($sessionId);
+        $transaction->setStripePaymentIntentId($session->payment_intent);
+        $transaction->setAmount($session->amount_total / 100);
+        $transaction->setStatus(TransactionStatus::PENDING);
+        $transaction->setCreatedAt(new \DateTimeImmutable());
+        
+        $this->entityManager->persist($transaction);
+        $this->entityManager->flush();
+
+        return $transaction;
     }
 
-    public function generateOnboardingLink(string $accountId): string
+    public function transferToSeller(Transaction $transaction): bool
+    {
+        try {
+            $seller = $transaction->getOffer()->getSeller();
+
+            if (!$seller->getStripeAccountId()) {
+                throw new \Exception('Le vendeur n\'a pas configuré son compte de réception');
+            }
+
+            $amountInCents = (int)($transaction->getAmount() * 100);
+            $platformFee = (int)($amountInCents * self::PLATFORM_FEE_PERCENTAGE / 100);
+            $sellerAmount = $amountInCents - $platformFee;
+
+            $transfer = $this->getStripe()->transfers->create([
+                'amount' => $sellerAmount,
+                'currency' => 'eur',
+                'destination' => $seller->getStripeAccountId(),
+                'description' => "Vente MealMates: {$transaction->getOffer()->getName()}",
+                'metadata' => [
+                    'transaction_id' => $transaction->getId(),
+                    'offer_id' => $transaction->getOffer()->getId(),
+                ]
+            ]);
+
+            $transaction->setStatus(TransactionStatus::COMPLETED);
+            $transaction->setTransferredAt(new \DateTimeImmutable());
+            $transaction->setStripeTransferId($transfer->id);
+            
+            $this->entityManager->flush();
+
+            return true;
+
+        } catch (\Exception $e) {
+            $this->logger->critical('Erreur lors du transfert Stripe vers le vendeur', [
+                'transaction_id' => $transaction->getId(),
+                'error' => $e->getMessage(),
+            ]);
+            $transaction->setStatus(TransactionStatus::FAILED);
+            $transaction->setErrorMessage($e->getMessage());
+            $this->entityManager->flush();
+            
+            return false;
+        }
+    }
+
+    public function createSellerAccount(User $user): string
     {
         $accountLink = $this->getStripe()->accountLinks->create([
-            'account' => $accountId,
-            'refresh_url' => "{$this->parameterBag->get('app.frontend_url')}/profile/stripe/refresh",
-            'return_url' => "{$this->parameterBag->get('app.frontend_url')}/profile/stripe/complete",
+            'account' => $this->getOrCreateExpressAccount($user),
+            'refresh_url' => "{$this->parameterBag->get('app.frontend_url')}/profile/banking/refresh",
+            'return_url' => "{$this->parameterBag->get('app.frontend_url')}/profile/banking/complete",
             'type' => 'account_onboarding',
         ]);
         
         return $accountLink->url;
     }
 
-    public function isConnectAccountReady(string $accountId): bool
+    public function deleteSellerAccount(User $user): bool
     {
-        $account = $this->getStripe()->accounts->retrieve($accountId);
-        return $account->charges_enabled && $account->payouts_enabled;
-    }
-
-    public function createPaymentToSeller(Offer $offer, User $buyer): \Stripe\PaymentIntent
-    {
-        $seller = $offer->getSeller();
-        $sellerStripeAccountId = $seller->getStripeConnectId();
-        
-        if (!$sellerStripeAccountId) {
-            throw new \Exception('Le vendeur n\'a pas de compte Stripe Connect lié');
+        if (!$user->getStripeAccountId()) {
+            return false;
         }
 
-        $priceInCents = (int)($offer->getPrice() * 100);
-        $applicationFeeAmount = (int)($priceInCents * self::PLATFORM_FEE_PERCENTAGE / 100);
+        try {
+            $this->getStripe()->accounts->delete($user->getStripeAccountId());
+            $user->setStripeAccountId(null);
+            $this->entityManager->flush();
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->critical('Erreur lors de la suppression du compte Stripe', [
+                'user_id' => $user->getId(),
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
 
-        return $this->getStripe()->paymentIntents->create([
-            'amount' => $priceInCents,
-            'currency' => 'eur',
-            'application_fee_amount' => $applicationFeeAmount,
-            'transfer_data' => [
-                'destination' => $sellerStripeAccountId,
+    private function getOrCreateExpressAccount(User $user): string
+    {
+        if ($user->getStripeAccountId()) {
+            return $user->getStripeAccountId();
+        }
+
+        $account = $this->getStripe()->accounts->create([
+            'type' => 'express',
+            'country' => 'FR',
+            'email' => $user->getEmail(),
+            'business_type' => 'individual',
+            'individual' => [
+                'first_name' => $user->getFirstName(),
+                'last_name' => $user->getLastName(),
+                'email' => $user->getEmail(),
             ],
-            'metadata' => [
-                'offer_id' => $offer->getId(),
-                'buyer_id' => $buyer->getId(),
-                'seller_id' => $seller->getId(),
+            'capabilities' => [
+                'transfers' => ['requested' => true],
             ],
-            'automatic_payment_methods' => [
-                'enabled' => true,
+            'business_profile' => [
+                'product_description' => 'Vente occasionnelle de produits alimentaires',
+                'mcc' => '5499', // Code pour vente de produits alimentaires divers
             ],
         ]);
+
+        $user->setStripeAccountId($account->id);
+        $this->entityManager->flush();
+        
+        return $account->id;
     }
 
-    /**
-     * Génère un lien vers le dashboard Express du vendeur
-     */
-    public function generateDashboardLink(string $accountId): string
+    public function refundTransaction(Transaction $transaction, ?string $reason = null): bool
     {
-        $loginLink = $this->getStripe()->accounts->createLoginLink($accountId);
-        return $loginLink->url;
+        try {
+            $refund = $this->getStripe()->refunds->create([
+                'payment_intent' => $transaction->getStripePaymentIntentId(),
+                'reason' => $reason ?? 'requested_by_customer',
+                'metadata' => [
+                    'transaction_id' => $transaction->getId(),
+                ]
+            ]);
+
+            $transaction->setStatus(TransactionStatus::REFUNDED);
+            $transaction->setRefundedAt(new \DateTimeImmutable());
+            $transaction->setStripeRefundId($refund->id);
+            
+            $this->entityManager->flush();
+
+            return true;
+
+        } catch (\Exception $e) {
+            $this->logger->critical('Erreur lors du remboursement Stripe', [
+                'transaction_id' => $transaction->getId(),
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
     }
-    
+
     public function getStripe(): StripeClient
     {
         return  $this->stripe ??= new StripeClient($_ENV['STRIPE_API_SECRET']);

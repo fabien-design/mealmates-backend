@@ -104,7 +104,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $githubId = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $stripeConnectId = null;
+    private ?string $stripeAccountId = null;
 
     /**
      * @var Collection<int, Address>
@@ -309,14 +309,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getStripeConnectId(): ?string
+    public function getStripeAccountId(): ?string
     {
-        return $this->stripeConnectId;
+        return $this->stripeAccountId;
     }
 
-    public function setStripeConnectId(?string $stripeConnectId): self
+    public function setStripeAccountId(?string $stripeAccountId): self
     {
-        $this->stripeConnectId = $stripeConnectId;
+        $this->stripeAccountId = $stripeAccountId;
         
         return $this;
     }

@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\OfferRepository;
+use App\Enums\OfferStatus;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -42,9 +43,9 @@ class Offer
     #[Groups('offer:read')]
     private ?float $dynamicPrice = null;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Groups('offer:read')]
-    private ?\DateTime $soldAt = null;
+    private ?\DateTime $soldAt = null; 
 
     /**
      * @var Collection<int, Allergen>
@@ -87,13 +88,6 @@ class Offer
 
     #[ORM\Column(options: ['default' => false])]
     private ?bool $expiryAlertSent = null;
-
-
-    #[ORM\Column(nullable: true)]
-    private ?string $stripeProductId = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $stripePriceId = null;
 
     /**
      * @var Collection<int, Conversation>
@@ -375,27 +369,16 @@ class Offer
         return $this;
     }
 
-    public function getStripeProductId(): ?string
+    public function getStatus(): OfferStatus
     {
-        return $this->stripeProductId;
-    }
-
-    public function setStripeProductId(?string $stripeProductId): static
-    {
-        $this->stripeProductId = $stripeProductId;
-
-        return $this;
-    }
-
-    public function getStripePriceId(): ?string
-    {
-        return $this->stripePriceId;
-    }
-
-    public function setStripePriceId(?string $stripePriceId): static
-    {
-        $this->stripePriceId = $stripePriceId;
-
-        return $this;
+        if ($this->soldAt !== null) {
+            return OfferStatus::SOLD;
+        }
+        
+        if ($this->expiryDate < new \DateTime()) {
+            return OfferStatus::EXPIRED;
+        }
+        
+        return OfferStatus::ACTIVE;
     }
 }
