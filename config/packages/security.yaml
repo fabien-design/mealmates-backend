@@ -40,7 +40,6 @@ security:
         main:
             oauth:
                 resource_owners:
-                    facebook:           "/connect/facebook/check"
                     google:             "/connect/google/check"
                     github:             "/connect/github/check"
                 login_path:   /connect

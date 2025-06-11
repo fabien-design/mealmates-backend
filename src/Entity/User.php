@@ -20,7 +20,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['user:read', 'address:read', 'allergen:read', 'food_preference:read'])]
+    #[Groups(['user:read', 'address:read', 'allergen:read', 'food_preference:read', 'conversation:read', 'offer:read', 'message:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
@@ -76,7 +76,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['user:read', 'user:write', 'user:profile', 'offer:read'])]
+    #[Groups(['user:read', 'user:write', 'user:profile', 'offer:read', 'conversation:read', 'message:read'])]
     #[Assert\NotBlank(message: "Le nom ne peut pas être vide")]
     #[Assert\Length(
         min: 2,
@@ -87,7 +87,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $last_name = null;
 
     #[ORM\Column(length: 50, nullable: false)]
-    #[Groups(['user:read', 'user:write', 'user:profile', 'offer:read'])]
+    #[Groups(['user:read', 'user:write', 'user:profile', 'offer:read', 'conversation:read', 'message:read'])]
     #[Assert\NotBlank(message: "Le prénom ne peut pas être vide")]
     #[Assert\Length(
         min: 2,
@@ -96,9 +96,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         maxMessage: "Le prénom ne peut pas dépasser {{ limit }} caractères"
     )]
     private ?string $first_name = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $facebookId = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $googleId = null;
@@ -161,6 +158,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: SavedSearchFilters::class, mappedBy: 'user')]
     private Collection $savedSearchFilters;
 
+    /**
+     * @var Collection<int, Conversation>
+     */
+    #[ORM\OneToMany(targetEntity: Conversation::class, mappedBy: 'buyer')]
+    private Collection $conversations;
+
     public function __construct()
     {
         $this->address = new ArrayCollection();
@@ -171,6 +174,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->ratings = new ArrayCollection();
         $this->notifications = new ArrayCollection();
         $this->savedSearchFilters = new ArrayCollection();
+        $this->conversations = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -272,16 +276,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getFacebookId(): ?string
+    public function getFullName(): string
     {
-        return $this->facebookId;
-    }
-
-    public function setFacebookId(?string $facebookId): static
-    {
-        $this->facebookId = $facebookId;
-
-        return $this;
+        $lastNameInitial = $this->last_name ? strtoupper($this->last_name[0]) . '.' : '';
+        return trim(sprintf('%s %s', $this->first_name ?? '', $lastNameInitial));
     }
 
     public function getGoogleId(): ?string
@@ -546,5 +544,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getSavedSearchCount(): int
     {
         return $this->savedSearchFilters->count();
+    }
+
+    /**
+     * @return Collection<int, Conversation>
+     */
+    public function getConversations(): Collection
+    {
+        return $this->conversations;
+    }
+
+    public function addConversation(Conversation $conversation): static
+    {
+        if (!$this->conversations->contains($conversation)) {
+            $this->conversations->add($conversation);
+            $conversation->setBuyer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeConversation(Conversation $conversation): static
+    {
+        if ($this->conversations->removeElement($conversation)) {
+            // set the owning side to null (unless already changed)
+            if ($conversation->getBuyer() === $this) {
+                $conversation->setBuyer(null);
+            }
+        }
+
+        return $this;
     }
 }

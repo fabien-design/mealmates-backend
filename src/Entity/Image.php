@@ -35,8 +35,11 @@ class Image
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'images')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     private ?Offer $offer = null;
+
+    #[ORM\ManyToOne(inversedBy: 'images')]
+    private ?Message $message = null;
 
     public function getId(): ?int
     {
@@ -115,6 +118,18 @@ class Image
     public function setOffer(?Offer $offer): static
     {
         $this->offer = $offer;
+
+        return $this;
+    }
+
+    public function getMessage(): ?Message
+    {
+        return $this->message;
+    }
+
+    public function setMessage(?Message $message): static
+    {
+        $this->message = $message;
 
         return $this;
     }
