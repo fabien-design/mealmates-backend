@@ -42,9 +42,9 @@ class Offer
     #[Groups('offer:read')]
     private ?float $dynamicPrice = null;
 
-    #[ORM\Column(type: Types::INTEGER, nullable: true)]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Groups('offer:read')]
-    private ?int $soldAt = null;
+    private ?\DateTime $soldAt = null;
 
     /**
      * @var Collection<int, Allergen>
@@ -182,12 +182,12 @@ class Offer
         return $this;
     }
 
-    public function getSoldAt(): ?int
+    public function getSoldAt(): ?\DateTime
     {
         return $this->soldAt;
     }
 
-    public function setSoldAt(int $soldAt): static
+    public function setSoldAt(\DateTime $soldAt): static
     {
         $this->soldAt = $soldAt;
 
