@@ -107,7 +107,6 @@ class OfferController extends AbstractController
             ]
         );
         $offer->setSeller($this->getUser());
-        $offer->setHasBeenSold(false);
         $offer->setDynamicPrice($offer->getPrice());
         $offer->setBuyer(null);
         if (count($data['allergens']) > 0) {
