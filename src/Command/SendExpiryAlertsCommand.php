@@ -5,6 +5,7 @@ namespace App\Command;
 use App\Entity\Notification;
 use App\Entity\Offer;
 use App\Repository\OfferRepository;
+use App\Service\Notification\OfferNotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -29,7 +30,8 @@ class SendExpiryAlertsCommand extends Command
     private OfferRepository $offerRepository,
     private EntityManagerInterface $entityManager,
     private MailerInterface $mailer,
-    private ParameterBagInterface $params
+    private ParameterBagInterface $params,
+    private OfferNotificationService $offerNotificationService
   ) {
     parent::__construct();
   }
@@ -92,24 +94,7 @@ class SendExpiryAlertsCommand extends Command
       ));
 
       if (!$isDryRun) {
-        $content = [
-          "message" => sprintf(
-            'Votre offre "%s" expire dans %d jours. Pensez à ajuster son prix ou à la convertir en don.',
-            $offer->getName(),
-            self::DAYS_BEFORE_ALERT
-          ),
-          "offerId" => $offer->getId(),
-        ];
-
-
-        $notification = new Notification();
-        $notification->setUser($seller);
-        $notification->setContent($content);
-        $notification->setType('expiry_alert');
-        $notification->setIsRead(false);
-        $notification->setCreatedAt(new \DateTimeImmutable());
-
-        $this->entityManager->persist($notification);
+        $this->offerNotificationService->notifyOfferExpiryWarning($offer);
       }
 
       // Envoyer un email

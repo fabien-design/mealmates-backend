@@ -4,7 +4,7 @@ namespace App\Service\Notification;
 
 use App\Entity\Offer;
 use App\Entity\User;
-use App\Service\Notification\Notifier;
+use App\Service\Notifier;
 
 class OfferNotificationService
 {
@@ -72,7 +72,7 @@ class OfferNotificationService
             'price' => $offer->getPrice(),
             'buyer_id' => $buyer->getId(),
             'buyer_fullname' => $buyer->getFullName(),
-            'sale_date' => (new \DateTimeImmutable($offer->getSoldAt()))->format('Y-m-d H:i:s'),
+            'sale_date' => ($offer->getSoldAt())->format('Y-m-d H:i:s'),
         ];
 
         return $this->notifier->emit($seller, self::TYPE_OFFER_SOLD, $content);

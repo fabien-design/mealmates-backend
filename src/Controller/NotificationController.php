@@ -74,15 +74,8 @@ class NotificationController extends AbstractController
         $unreadOnly = $request->query->getBoolean('unread', false);
 
         $notifications = $this->notificationRepository->findByUserWithPagination($user, $limit, $offset, $unreadOnly);
-        $totalCount = $this->notificationRepository->countByUser($user);
-        $unreadCount = $this->notificationRepository->countUnreadByUser($user);
 
-        return $this->json([
-            'success' => true,
-            'data' => $notifications,
-            'total' => $totalCount,
-            'unread_count' => $unreadCount
-        ], Response::HTTP_OK);
+        return $this->json($notifications, Response::HTTP_OK, [], ['groups' => ['notification:read']]);
     }
 
     #[Route('/{id}/mark-as-read', name: 'api_notifications_mark_as_read', methods: ['PATCH'])]
@@ -133,7 +126,7 @@ class NotificationController extends AbstractController
             'success' => true,
             'message' => 'Notification marquée comme lue avec succès',
             'notification' => $notification
-        ], Response::HTTP_OK);
+        ], Response::HTTP_OK, [], ['groups' => ['notification:read']]);
     }
 
     #[Route('/mark-all-as-read', name: 'api_notifications_mark_all_as_read', methods: ['PATCH'])]
@@ -164,6 +157,31 @@ class NotificationController extends AbstractController
             'message' => 'Toutes les notifications ont été marquées comme lues',
             'updated_count' => $updatedCount
         ], Response::HTTP_OK);
+    }
+
+    #[Route('/unread-count', name: 'api_notifications_unread_count', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Response(
+        response: 200,
+        description: 'Nombre de notifications non lues',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'success', type: 'boolean'),
+                new OA\Property(property: 'unread_count', type: 'integer')
+            ]
+        )
+    )]
+    public function unreadCount(): JsonResponse
+    {
+        $user = $this->getUser();
+
+        if (!$user) {
+            throw new AccessDeniedHttpException('Vous devez être connecté pour accéder à cette ressource.');
+        }
+
+        $unreadCount = $this->notificationRepository->countUnreadByUser($user);
+
+        return $this->json(['count' => $unreadCount], Response::HTTP_OK);
     }
 
     #[Route('/{id}', name: 'api_notifications_delete', methods: ['DELETE'])]
@@ -212,6 +230,6 @@ class NotificationController extends AbstractController
         return $this->json([
             'success' => true,
             'message' => 'Notification supprimée avec succès'
-        ], Response::HTTP_OK);
+        ], Response::HTTP_OK, [], ['groups' => ['notification:read']]);
     }
 }

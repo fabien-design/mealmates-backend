@@ -202,5 +202,55 @@ class OfferController extends AbstractController
         ]);
     }
 
+    #[Route('/products/{id}/donate', name: 'api_donate_product', methods: ['PATCH'])]
+    #[OA\Tag(name: 'Offres')]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(
+        response: 200,
+        description: 'Offre convertie en don avec succès',
+        content: new OA\JsonContent(type: 'object', properties: [
+            new OA\Property(property: 'success', type: 'boolean'),
+            new OA\Property(property: 'offer', type: 'object')
+        ])
+    )]
+    #[OA\Response(
+        response: 403,
+        description: 'Accès refusé',
+        content: new OA\JsonContent(type: 'object', properties: [
+            new OA\Property(property: 'error', type: 'string')
+        ])
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Offre non trouvée',
+        content: new OA\JsonContent(type: 'object', properties: [
+            new OA\Property(property: 'error', type: 'string')
+        ])
+    )]
+    public function donateProduct(Offer $offer, EntityManagerInterface $em): JsonResponse
+    {
+        if ($offer->getSeller() !== $this->getUser()) {
+            return $this->json([
+                'error' => 'Vous n\'êtes pas autorisé à modifier cette offre'
+            ], Response::HTTP_FORBIDDEN);
+        }
 
+        if ($offer->getBuyer() !== null) {
+            return $this->json([
+                'error' => 'Cette offre a déjà été vendue'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $offer->setPrice(0);
+        $offer->setDynamicPrice(0);
+        
+        $em->flush();
+
+        return $this->json([
+            'success' => true,
+            'offer' => $offer
+        ], Response::HTTP_OK, [], [
+            'groups' => ['offer:read'],
+        ]);
+    }
 }
