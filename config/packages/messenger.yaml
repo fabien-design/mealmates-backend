@@ -1,0 +1,8 @@
+framework:
+    messenger:
+        transports:
+            scheduler-transport:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                
+        routing:
+            Symfony\Component\Console\Messenger\RunCommandMessage: scheduler-transport
