@@ -6,6 +6,8 @@ use App\Entity\Offer;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\ORM\QueryBuilder;
+use App\Entity\User;
+use App\Enums\OfferStatus;
 
 /**
  * @extends ServiceEntityRepository<Offer>
@@ -174,6 +176,52 @@ class OfferRepository extends ServiceEntityRepository
             ->setParameter('expiry_date', $expiryDate)
             ->orderBy('o.expiryDate', 'ASC');
 
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Trouve les offres d'un utilisateur selon le statut demandé
+     * 
+     * @param User $user
+     * @param string|OfferStatus $status
+     * @return Offer[]
+     */
+    public function findUserOffersByStatus(User $user, string|OfferStatus $status): array
+    {
+        $qb = $this->createQueryBuilder('o')
+            ->where('o.seller = :seller')
+            ->setParameter('seller', $user);
+            
+        if ($status instanceof OfferStatus) {
+            $statusValue = $status->value;
+        } else {
+            $statusValue = $status;
+        }
+        
+        $today = new \DateTime();
+            
+        switch ($statusValue) {
+            case OfferStatus::ACTIVE->value:
+                $qb->andWhere('o.soldAt IS NULL')
+                   ->andWhere('o.expiryDate >= :today')
+                   ->setParameter('today', $today)
+                   ->orderBy('o.expiryDate', 'ASC');
+                break;
+            case OfferStatus::SOLD->value:
+                $qb->andWhere('o.soldAt IS NOT NULL')
+                   ->orderBy('o.soldAt', 'DESC');
+                break;
+            case OfferStatus::EXPIRED->value:
+                $qb->andWhere('o.soldAt IS NULL')
+                   ->andWhere('o.expiryDate < :today')
+                   ->setParameter('today', $today)
+                   ->orderBy('o.expiryDate', 'DESC');
+                break;
+            default:
+                $qb->orderBy('o.id', 'DESC');
+                break;
+        }
+        
         return $qb->getQuery()->getResult();
     }
 }

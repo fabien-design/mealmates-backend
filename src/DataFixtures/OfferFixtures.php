@@ -30,7 +30,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'alicia_1',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '2',
@@ -45,7 +45,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'thomas_1',
             'buyer' => null,
             'isRecurring' => true,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '3',
@@ -60,7 +60,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'alicia_2',
             'buyer' => null,
             'isRecurring' => true,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '4',
@@ -75,7 +75,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'admin_4',
             'buyer' => 'thomas',
             'isRecurring' => false,
-            'hasBeenSold' => true,
+            'soldAt' => 'now',
         ],
         [
             'identifier' => '5',
@@ -90,7 +90,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'david_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '6',
@@ -105,7 +105,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'julie_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '7',
@@ -120,7 +120,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'julie_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '8',
@@ -135,7 +135,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'lucas_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '9',
@@ -150,7 +150,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'thomas_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '10',
@@ -165,7 +165,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'lucas_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '11',
@@ -180,7 +180,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'alicia_1',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '12',
@@ -195,7 +195,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'sophie_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '13',
@@ -210,7 +210,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'sophie_2',
             'buyer' => 'nicolas',
             'isRecurring' => false,
-            'hasBeenSold' => true,
+             'soldAt' => 'now',
         ],
         [
             'identifier' => '14',
@@ -225,7 +225,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'maxime_2',
             'buyer' => 'alicia',
             'isRecurring' => true,
-            'hasBeenSold' => true,
+             'soldAt' => 'now',
         ],
         [
             'identifier' => '15',
@@ -240,7 +240,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'alicia_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '16',
@@ -255,7 +255,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'alicia_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '17',
@@ -270,7 +270,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'nicolas_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '18',
@@ -285,7 +285,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'lucas_1',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '19',
@@ -300,7 +300,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'celine_3',
             'buyer' => 'nicolas',
             'isRecurring' => false,
-            'hasBeenSold' => true,
+             'soldAt' => 'now',
         ],
         [
             'identifier' => '20',
@@ -315,7 +315,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'thomas_1',
             'buyer' => 'david',
             'isRecurring' => false,
-            'hasBeenSold' => true,
+             'soldAt' => 'now',
         ],
         [
             'identifier' => '21',
@@ -330,7 +330,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'admin_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '22',
@@ -345,7 +345,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'sophie_1',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '23',
@@ -360,7 +360,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'maxime_1',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '24',
@@ -375,7 +375,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'maxime_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '25',
@@ -390,7 +390,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'julie_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '26',
@@ -405,7 +405,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'david_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '27',
@@ -420,7 +420,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'celine_3',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '28',
@@ -435,7 +435,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'julie_2',
             'buyer' => 'david',
             'isRecurring' => false,
-            'hasBeenSold' => true,
+             'soldAt' => 'now',
         ],
         [
             'identifier' => '29',
@@ -450,7 +450,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'thomas_3',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '30',
@@ -465,7 +465,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'julie_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '31',
@@ -480,7 +480,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'emilie_3',
             'buyer' => null,
             'isRecurring' => true,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '32',
@@ -495,7 +495,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'sophie_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '33',
@@ -510,7 +510,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'alicia_1',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '34',
@@ -525,7 +525,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'julie_1',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '35',
@@ -540,7 +540,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'maxime_1',
             'buyer' => 'admin',
             'isRecurring' => false,
-            'hasBeenSold' => true,
+             'soldAt' => 'now',
         ],
         [
             'identifier' => '36',
@@ -555,7 +555,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'admin_4',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '37',
@@ -570,7 +570,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'sophie_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '38',
@@ -585,7 +585,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'lucas_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '39',
@@ -600,7 +600,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'thomas_3',
             'buyer' => 'emilie',
             'isRecurring' => false,
-            'hasBeenSold' => true,
+             'soldAt' => 'now',
         ],
         [
             'identifier' => '40',
@@ -615,7 +615,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'maxime_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '41',
@@ -630,7 +630,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'alicia_1',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '42',
@@ -645,7 +645,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'alicia_1',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '43',
@@ -660,7 +660,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'sophie_1',
             'buyer' => null,
             'isRecurring' => true,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '44',
@@ -675,7 +675,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'alicia_2',
             'buyer' => null,
             'isRecurring' => true,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '45',
@@ -690,7 +690,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'nicolas_1',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '46',
@@ -705,7 +705,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'julie_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '47',
@@ -720,7 +720,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'lucas_1',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '48',
@@ -735,7 +735,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'david_1',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '49',
@@ -750,7 +750,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'maxime_2',
             'buyer' => null,
             'isRecurring' => false,
-            'hasBeenSold' => false,
+            'soldAt' => null,
         ],
         [
             'identifier' => '50',
@@ -765,7 +765,7 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             'address' => 'maxime_1',
             'buyer' => 'thomas',
             'isRecurring' => false,
-            'hasBeenSold' => true,
+             'soldAt' => 'now',
         ]
     ];
 
@@ -781,9 +781,11 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             $offer->setQuantity($data['quantity']);
             $offer->setDynamicPrice($data['dynamicPrice']);
             $offer->setIsRecurring($data['isRecurring']);
-            if ($data['hasBeenSold']) {
-                $offer->setSoldAt(new \DateTime());
+
+            if (null !== $data['soldAt']) {
+                $offer->setSoldAt(new \DateTime($data['soldAt'] === 'now' ? 'now' : $data['soldAt']));
             }
+
             $offer->setSeller($this->getReference(UserFixtures::REFERENCE_IDENTIFIER . $data['seller'], User::class));
             if ($data['buyer']) {
                 $offer->setBuyer($this->getReference(UserFixtures::REFERENCE_IDENTIFIER . $data['buyer'], User::class));
