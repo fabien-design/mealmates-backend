@@ -781,9 +781,11 @@ class OfferFixtures extends Fixture implements DependentFixtureInterface
             $offer->setQuantity($data['quantity']);
             $offer->setDynamicPrice($data['dynamicPrice']);
             $offer->setIsRecurring($data['isRecurring']);
+
             if (null !== $data['soldAt']) {
                 $offer->setSoldAt(new \DateTime($data['soldAt'] === 'now' ? 'now' : $data['soldAt']));
             }
+
             $offer->setSeller($this->getReference(UserFixtures::REFERENCE_IDENTIFIER . $data['seller'], User::class));
             if ($data['buyer']) {
                 $offer->setBuyer($this->getReference(UserFixtures::REFERENCE_IDENTIFIER . $data['buyer'], User::class));

@@ -45,7 +45,7 @@ class Offer
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Groups('offer:read')]
-    private ?\DateTime $soldAt = null; 
+    private ?\DateTime $soldAt = null;
 
     /**
      * @var Collection<int, Allergen>
