@@ -26,7 +26,15 @@ class OfferNotificationService
         }
 
         $expiryDate = $offer->getExpiryDate();
-        $daysUntilExpiry = $expiryDate ? $expiryDate->diff(new \DateTime())->days : 0;
+        $daysUntilExpiry = 0;
+        if ($expiryDate) {
+            $now = new \DateTime();
+            $nowDate = new \DateTime($now->format('Y-m-d'));
+            $expiryDateOnly = new \DateTime($expiryDate->format('Y-m-d'));
+
+            $interval = $nowDate->diff($expiryDateOnly);
+            $daysUntilExpiry = $interval->days;
+        }
 
         $content = [
             'offer_id' => $offer->getId(),
