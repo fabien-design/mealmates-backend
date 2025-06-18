@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\OfferRepository;
+use App\Enums\OfferStatus;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -109,6 +110,12 @@ class Offer
     {
         return $this->id;
     }
+
+    public function isActive(): bool
+    {
+        return $this->expiryDate > new \DateTime() && $this->soldAt === null;
+    }
+
 
     public function getName(): ?string
     {
@@ -360,5 +367,18 @@ class Offer
         }
 
         return $this;
+    }
+
+    public function getStatus(): OfferStatus
+    {
+        if ($this->soldAt !== null) {
+            return OfferStatus::SOLD;
+        }
+        
+        if ($this->expiryDate < new \DateTime()) {
+            return OfferStatus::EXPIRED;
+        }
+        
+        return OfferStatus::ACTIVE;
     }
 }
