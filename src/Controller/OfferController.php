@@ -255,7 +255,6 @@ class OfferController extends AbstractController
 
                         $em->persist($image);
                     } catch (\Exception $e) {
-                        dd($e->getMessage());
                         $this->logger->error("Erreur lors du traitement de l'image: " . $e->getMessage());
                         error_log("Erreur lors du traitement de l'image: " . $e->getMessage());
                         continue;
