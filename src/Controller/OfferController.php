@@ -30,8 +30,7 @@ class OfferController extends AbstractController
 {
     public function __construct(
         private readonly LoggerInterface $logger,
-    )
-    {
+    ) {
     }
 
 
@@ -297,6 +296,57 @@ class OfferController extends AbstractController
         }
     }
 
+
+
+    #[Route('/products/my-offers', name: 'api_my_offers', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Tag(name: 'Offres')]
+    #[OA\Parameter(
+        name: 'status',
+        in: 'query',
+        required: false,
+        schema: new OA\Schema(type: 'string', enum: ['active', 'sold', 'expired', 'all']),
+        description: 'Filtrer par statut'
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Liste des offres de l\'utilisateur'
+    )]
+    public function getMyOffers(Request $request, OfferRepository $offerRepository): JsonResponse
+    {
+        $user = $this->getUser();
+        $status = $request->query->get('status', 'all');
+
+        if ($status !== 'all' && !in_array(OfferStatus::tryFrom($status), OfferStatus::cases())) {
+            return $this->json([
+                'error' => 'Statut invalide. Utilisez "active", "expired", "sold", "all".'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $offers = $offerRepository->findUserOffersByStatus($user, $status);
+
+        return $this->json($offers, Response::HTTP_OK, [], [
+            'groups' => ['offer:read'],
+        ]);
+    }
+
+    #[Route('/products/bought-offers', name: 'api_bought_offers', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Response(
+        response: 200,
+        description: 'Liste des offres achetées par l\'utilisateur',
+    )]
+    #[OA\Tag(name: 'Offres')]
+    public function getBoughtOffers(OfferRepository $offerRepository): JsonResponse
+    {
+        $user = $this->getUser();
+        $offers = $offerRepository->findUserBoughtOffers($user);
+
+        return $this->json($offers, Response::HTTP_OK, [], [
+            'groups' => ['offer:read'],
+        ]);
+    }
+
     #[Route('/products/{id}', name: 'api_get_product', methods: ['GET'])]
     #[OA\Tag(name: 'Offres')]
     #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
@@ -357,7 +407,7 @@ class OfferController extends AbstractController
 
         $offer->setPrice(0);
         $offer->setDynamicPrice(0);
-        
+
         $em->flush();
 
         return $this->json([
@@ -512,37 +562,5 @@ class OfferController extends AbstractController
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-    }
-
-    #[Route('/products/my-offers', name: 'api_my_offers', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
-    #[OA\Tag(name: 'Offres')]
-    #[OA\Parameter(
-        name: 'status',
-        in: 'query',
-        required: false,
-        schema: new OA\Schema(type: 'string', enum: ['active', 'sold', 'expired', 'all']),
-        description: 'Filtrer par statut'
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'Liste des offres de l\'utilisateur'
-    )]
-    public function getMyOffers(Request $request, OfferRepository $offerRepository): JsonResponse
-    {
-        $user = $this->getUser();
-        $status = $request->query->get('status', 'all');
-
-        if (!in_array($status, OfferStatus::cases())) {
-            return $this->json([
-                'error' => 'Statut invalide. Utilisez "active", "expired", "sold", "all".'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-        
-        $offers = $offerRepository->findUserOffersByStatus($user, $status);
-        
-        return $this->json($offers, Response::HTTP_OK, [], [
-            'groups' => ['offer:read'],
-        ]);
     }
 }
