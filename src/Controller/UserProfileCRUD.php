@@ -62,11 +62,7 @@ class UserProfileCRUD extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        if (!$user) {
-            throw new AccessDeniedHttpException('Vous devez être connecté pour accéder à cette ressource.');
-        }
-
-        return $this->json(["success" => true], Response::HTTP_OK, []);
+        return $this->json(["success" => !empty($user)], Response::HTTP_OK, []);
     }
 
     #[Route('', name: 'api_profile_show', methods: ['GET'])]

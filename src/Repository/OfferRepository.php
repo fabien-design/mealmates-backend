@@ -191,37 +191,53 @@ class OfferRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('o')
             ->where('o.seller = :seller')
             ->setParameter('seller', $user);
-            
+
         if ($status instanceof OfferStatus) {
             $statusValue = $status->value;
         } else {
             $statusValue = $status;
         }
-        
+
         $today = new \DateTime();
-            
+
         switch ($statusValue) {
             case OfferStatus::ACTIVE->value:
                 $qb->andWhere('o.soldAt IS NULL')
-                   ->andWhere('o.expiryDate >= :today')
-                   ->setParameter('today', $today)
-                   ->orderBy('o.expiryDate', 'ASC');
+                    ->andWhere('o.expiryDate >= :today')
+                    ->setParameter('today', $today)
+                    ->orderBy('o.expiryDate', 'ASC');
                 break;
             case OfferStatus::SOLD->value:
                 $qb->andWhere('o.soldAt IS NOT NULL')
-                   ->orderBy('o.soldAt', 'DESC');
+                    ->orderBy('o.soldAt', 'DESC');
                 break;
             case OfferStatus::EXPIRED->value:
                 $qb->andWhere('o.soldAt IS NULL')
-                   ->andWhere('o.expiryDate < :today')
-                   ->setParameter('today', $today)
-                   ->orderBy('o.expiryDate', 'DESC');
+                    ->andWhere('o.expiryDate < :today')
+                    ->setParameter('today', $today)
+                    ->orderBy('o.expiryDate', 'DESC');
                 break;
             default:
                 $qb->orderBy('o.id', 'DESC');
                 break;
         }
-        
+
         return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Trouve les offres achetées par un utilisateur
+     * 
+     * @param User $user
+     * @return Offer[]
+     */
+    public function findUserBoughtOffers(User $user): array
+    {
+        return $this->createQueryBuilder('o')
+            ->where('o.buyer = :buyer')
+            ->setParameter('buyer', $user)
+            ->orderBy('o.soldAt', 'DESC')
+            ->getQuery()
+            ->getResult();
     }
 }

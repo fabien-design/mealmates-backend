@@ -8,7 +8,8 @@ enum OfferStatus: string
     case SOLD = 'sold';
     case EXPIRED = 'expired';
     case DELETED = 'deleted';
-    
+    case ALL = 'all';
+
     /**
      * @return array<string, string>
      */
@@ -35,5 +36,10 @@ enum OfferStatus: string
     public function isDeleted(): bool
     {
         return $this === self::DELETED;
+    }
+
+    public function isAll(): bool
+    {
+        return $this === self::ALL;
     }
 }

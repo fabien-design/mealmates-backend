@@ -60,6 +60,7 @@ security:
         - { path: ^/api/v1/(login|token/refresh), roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/user/logged, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/products/nearby, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/products/\d+, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/doc, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1, roles: IS_AUTHENTICATED_FULLY }
 
