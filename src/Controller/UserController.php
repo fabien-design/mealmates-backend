@@ -227,7 +227,7 @@ class UserController extends AbstractController
 
         $frontendUrl = $this->params->get('app.frontend_url');
 
-        return $this->redirect(`$frontendUrl/api/discover`);
+        return $this->redirect($frontendUrl . '/app/discover');
     }
 
     #[Route('/resend-verification-email', name: 'app_resend_verification', methods: ['POST'])]
