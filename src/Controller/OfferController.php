@@ -231,8 +231,9 @@ class OfferController extends AbstractController
                             continue;
                         }
 
-                        $extension = pathinfo($imageData['name'], PATHINFO_EXTENSION);
-                        if (!in_array(strtolower($extension), ImageExtension::cases())) {
+                        $extension = strtolower(pathinfo($imageData['name'], PATHINFO_EXTENSION));
+                        if (ImageExtension::tryFrom($extension) === null) {
+                            $this->logger->warning("Extension d'image non supportée: $extension");
                             continue;
                         }
 
@@ -247,7 +248,6 @@ class OfferController extends AbstractController
                             null,
                             true
                         );
-
                         $image->setFile($uploadedFile);
                         $image->setCreatedAt(new \DateTimeImmutable());
                         $image->setUpdatedAt(new \DateTimeImmutable());
