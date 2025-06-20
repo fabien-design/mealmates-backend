@@ -98,11 +98,13 @@ class UserProfileCRUD extends AbstractController
                 new OA\Property(property: 'sexe', type: 'boolean', example: true),
                 new OA\Property(property: 'addresses', type: 'array', items: new OA\Items(
                     properties: [
-                        new OA\Property(property: 'id', type: 'integer', nullable: true),
+                        new OA\Property(property: 'id', type: 'integer', nullable: true, description: 'ID de l\'adresse existante (null pour une nouvelle adresse)'),
                         new OA\Property(property: 'address', type: 'string'),
                         new OA\Property(property: 'city', type: 'string'),
                         new OA\Property(property: 'zipCode', type: 'string'),
-                        new OA\Property(property: 'region', type: 'string')
+                        new OA\Property(property: 'region', type: 'string'),
+                        new OA\Property(property: 'latitude', type: 'number', nullable: true),
+                        new OA\Property(property: 'longitude', type: 'number', nullable: true)
                     ]
                 )),
                 new OA\Property(property: 'allergenIds', type: 'array', items: new OA\Items(type: 'integer')),
@@ -141,29 +143,40 @@ class UserProfileCRUD extends AbstractController
             'groups' => ['user:write']
         ]);
 
-        foreach ($user->getAddress() as $existingAddress) {
-            $user->removeAddress($existingAddress);
-            $existingAddress->removeIdUser($user);
+        // Handle addresses update
+        if (isset($data['addresses']) && is_array($data['addresses'])) {
+            $submittedAddressIds = [];
 
-            if ($existingAddress->getIdUser()->isEmpty()) {
-                $this->em->remove($existingAddress);
-            }
-        }
+            foreach ($data['addresses'] as $addressData) {
+                if (isset($addressData['id']) && $addressData['id']) {
+                    // Update existing address
+                    $submittedAddressIds[] = $addressData['id'];
+                    $existingAddress = $addressRepository->find($addressData['id']);
 
-        if (isset($data['address']) && is_array($data['address'])) {
-            foreach ($data['address'] as $addressData) {
-                $address = new Address();
-                $address->setAddress($addressData['address'] ?? null);
-                $address->setCity($addressData['city'] ?? null);
-                $address->setZipCode($addressData['zipCode'] ?? null);
-                $address->setRegion($addressData['region'] ?? null);
-                $address->setLatitude($addressData['latitude'] ?? null);
-                $address->setLongitude($addressData['longitude'] ?? null);
+                    if ($existingAddress && $existingAddress->getIdUser()->contains($user)) {
+                        $existingAddress->setAddress($addressData['address'] ?? $existingAddress->getAddress());
+                        $existingAddress->setCity($addressData['city'] ?? $existingAddress->getCity());
+                        $existingAddress->setZipCode($addressData['zipCode'] ?? $existingAddress->getZipCode());
+                        $existingAddress->setRegion($addressData['region'] ?? $existingAddress->getRegion());
+                        $existingAddress->setLatitude($addressData['latitude'] ?? $existingAddress->getLatitude());
+                        $existingAddress->setLongitude($addressData['longitude'] ?? $existingAddress->getLongitude());
+                    }
+                } else {
+                    // Create new address
+                    $address = new Address();
+                    $address->setAddress($addressData['address'] ?? null);
+                    $address->setCity($addressData['city'] ?? null);
+                    $address->setZipCode($addressData['zipCode'] ?? null);
+                    $address->setRegion($addressData['region'] ?? null);
+                    $address->setLatitude($addressData['latitude'] ?? null);
+                    $address->setLongitude($addressData['longitude'] ?? null);
 
-                $address->addIdUser($user);
-                $user->addAddress($address);
+                    $address->addIdUser($user);
+                    $user->addAddress($address);
 
-                $this->em->persist($address);
+                    $this->em->persist($address);
+                    $submittedAddressIds[] = $address->getId();
+                }
             }
         }
 
