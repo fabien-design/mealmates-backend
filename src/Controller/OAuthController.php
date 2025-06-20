@@ -214,4 +214,77 @@ class OAuthController extends AbstractController
 
         return $this->json(['oauth_data' => $encodedData]);
     }
+    #[Route('/api/v1/logout', name: 'api_logout', methods: ['POST'])]
+    #[OA\Post(path: '/api/v1/logout', description: 'Déconnecte l\'utilisateur et invalide les tokens', summary: 'Déconnexion')]
+    #[OA\Response(
+        response: 200,
+        description: 'Déconnexion réussie',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'message', type: 'string', example: 'Logout successful')
+            ]
+        )
+    )]
+    #[OA\Tag(name: 'Authentication')]
+    public function logout(Request $request): Response
+    {
+        $response = $this->json(['message' => 'Logout successful']);
+
+        // Get the refresh token from cookie to invalidate it in database
+        $refreshTokenCookie = $request->cookies->get('refresh_token');
+        if ($refreshTokenCookie) {
+            // Find and delete the refresh token from database
+            $refreshTokenEntity = $this->refreshTokenManager->get($refreshTokenCookie);
+            if ($refreshTokenEntity) {
+                $this->refreshTokenManager->delete($refreshTokenEntity);
+            }
+        }
+
+        // Clear all authentication cookies by setting them to expire immediately
+        $expiredTime = new \DateTime('-1 hour'); // Past time to expire immediately
+
+        $response->headers->setCookie(
+            new Cookie(
+                'jwt_token',
+                '',
+                $expiredTime,
+                '/',
+                null,
+                true,  // Secure
+                true,  // HTTP only
+                false,
+                Cookie::SAMESITE_LAX
+            )
+        );
+
+        $response->headers->setCookie(
+            new Cookie(
+                'refresh_token',
+                '',
+                $expiredTime,
+                '/',
+                null,
+                true,
+                true,
+                false,
+                Cookie::SAMESITE_LAX
+            )
+        );
+
+        $response->headers->setCookie(
+            new Cookie(
+                'oauth_data',
+                '',
+                $expiredTime,
+                '/',
+                null,
+                true,
+                true,
+                false,
+                Cookie::SAMESITE_LAX
+            )
+        );
+
+        return $response;
+    }
 }
