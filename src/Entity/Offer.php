@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OfferRepository::class)]
 class Offer
@@ -21,22 +22,41 @@ class Offer
 
     #[ORM\Column(length: 255)]
     #[Groups(['offer:read', 'offer:write'])]
+    #[Assert\NotBlank(message: "Le nom ne peut pas être vide")]
+    #[Assert\Length(
+        min: 2,
+        max: 50,
+        minMessage: "Le nom doit contenir au moins {{ limit }} caractères",
+        maxMessage: "Le nom ne peut pas dépasser {{ limit }} caractères"
+    )]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(['offer:read', 'offer:write'])]
+    #[Assert\NotBlank(message: "La description ne peut pas être vide")]
+    #[Assert\Length(
+        min: 5,
+        max: 255,
+        minMessage: "La description doit contenir au moins {{ limit }} caractères",
+        maxMessage: "La description ne peut pas dépasser {{ limit }} caractères"
+    )]
     private ?string $description = null;
 
     #[ORM\Column]
     #[Groups(['offer:read', 'offer:write'])]
+    #[Assert\NotNull(message: "La quantité doit être spécifiée")]
+    #[Assert\Positive(message: "La quantité doit être supérieure à 0")]
     private ?int $quantity = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     #[Groups(['offer:read', 'offer:write'])]
+    #[Assert\NotNull(message: "La date d'expiration doit être spécifiée")]
     private ?\DateTimeInterface $expiryDate = null;
 
     #[ORM\Column]
     #[Groups(['offer:read', 'offer:write'])]
+    #[Assert\NotNull(message: "Le prix doit être spécifié")]
+    #[Assert\GreaterThanOrEqual(0, message: "Le prix ne peut pas être négatif")]
     private ?float $price = null;
 
     #[ORM\Column(nullable: true)]
@@ -374,11 +394,11 @@ class Offer
         if ($this->soldAt !== null) {
             return OfferStatus::SOLD;
         }
-        
+
         if ($this->expiryDate < new \DateTime()) {
             return OfferStatus::EXPIRED;
         }
-        
+
         return OfferStatus::ACTIVE;
     }
 }
