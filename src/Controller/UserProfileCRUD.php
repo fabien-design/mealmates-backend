@@ -114,7 +114,7 @@ class UserProfileCRUD extends AbstractController
     )]
     #[OA\Response(
         response: 200,
-        description: 'Profil mis à jour avec succès',
+        description: 'Profil mis à jour avec succès.',
         content: new Model(type: User::class, groups: ['user:read', 'user:profile', 'address:read', 'allergen:read', 'food_preference:read'])
     )]
     #[OA\Response(
@@ -197,7 +197,7 @@ class UserProfileCRUD extends AbstractController
 
         return $this->json([
             'success' => true,
-            'message' => 'Profil mis à jour avec succès',
+            'message' => 'Profil mis à jour avec succès.',
             'user' => $user
         ], Response::HTTP_OK, [], [
             'groups' => ['user:read', 'user:profile', 'address:read', 'allergen:read', 'food_preference:read']
