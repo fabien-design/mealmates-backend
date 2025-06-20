@@ -1,0 +1,44 @@
+name: Deploy Symfony App to VPS
+on:
+  push:
+    branches: [master]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add host key to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /data/app_symfony/website && git pull"
+
+      - name: Install Composer dependencies
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /data/app_symfony/website && composer install --no-interaction --optimize-autoloader"
+
+      - name: Run database migrations
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /data/app_symfony/website && php bin/console d:s:u --force --no-interaction"
+
+      - name: Clear cache
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /data/app_symfony/website && php bin/console cache:clear"
+
+      - name: Restart PHP-FPM (if needed)
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "sudo systemctl restart php8.4-fpm || true"
+
+      - name: Restart Nginx (if needed)
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "sudo systemctl restart nginx || true"
