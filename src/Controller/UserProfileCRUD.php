@@ -309,10 +309,6 @@ class UserProfileCRUD extends AbstractController
         $user->removeAddress($address);
         $address->removeIdUser($user);
 
-        if ($address->getIdUser()->isEmpty()) {
-            $this->em->remove($address);
-        }
-
         $this->em->flush();
 
         return $this->json([
