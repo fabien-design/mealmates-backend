@@ -5,6 +5,7 @@ namespace App\Enums;
 enum TransactionStatus: string
 {
     case PENDING = 'pending';
+    case RESERVED = 'reserved';
     case COMPLETED = 'completed';
     case FAILED = 'failed';
     case REFUNDED = 'refunded';
@@ -20,6 +21,11 @@ enum TransactionStatus: string
     public function isPending(): bool
     {
         return $this === self::PENDING;
+    }
+
+    public function isReserved(): bool
+    {
+        return $this === self::RESERVED;
     }
 
     public function isCompleted(): bool

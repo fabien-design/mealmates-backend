@@ -8,6 +8,8 @@ parameters:
   app.backend_url: "%env(BACKEND_URL)%"
   app.email_sender: "%env(EMAIL_SENDER)%"
   app.email_sender_name: "%env(EMAIL_SENDER_NAME)%"
+  app.reservation_expiry_hours: 24
+  app.qr_code_expiry_minutes: 5
 
 services:
   # default configuration for services in *this* file
@@ -43,5 +45,9 @@ services:
   HWI\Bundle\OAuthBundle\Security\Http\ResourceOwnerMap: "@hwi_oauth.resource_ownermap.main"
 
   App\Serializer\Normalizer\OfferNormalizer:
+    tags:
+      - { name: "serializer.normalizer", priority: 500 }
+  
+  App\Serializer\Normalizer\UserNormalizer:
     tags:
       - { name: "serializer.normalizer", priority: 500 }

@@ -39,10 +39,10 @@ class Transaction
     #[Groups(['transaction:read'])]
     private ?TransactionStatus $status = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $stripeSessionId = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $stripePaymentIntentId = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -64,6 +64,20 @@ class Transaction
 
     #[ORM\Column(length: 500, nullable: true)]
     private ?string $errorMessage = null;
+    
+    #[ORM\Column(nullable: true)]
+    #[Groups(['transaction:read'])]
+    private ?\DateTimeImmutable $reservationExpiresAt = null;
+    
+    #[ORM\Column(nullable: true)]
+    #[Groups(['transaction:read'])]
+    private ?\DateTimeImmutable $reservedAt = null;
+    
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $qrCodeToken = null;
+    
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $qrCodeExpiresAt = null;
 
     public function getId(): ?int
     {
@@ -130,7 +144,7 @@ class Transaction
         return $this->stripeSessionId;
     }
 
-    public function setStripeSessionId(string $stripeSessionId): static
+    public function setStripeSessionId(?string $stripeSessionId): static
     {
         $this->stripeSessionId = $stripeSessionId;
         return $this;
@@ -141,7 +155,7 @@ class Transaction
         return $this->stripePaymentIntentId;
     }
 
-    public function setStripePaymentIntentId(string $stripePaymentIntentId): static
+    public function setStripePaymentIntentId(?string $stripePaymentIntentId): static
     {
         $this->stripePaymentIntentId = $stripePaymentIntentId;
         return $this;
@@ -212,10 +226,59 @@ class Transaction
         $this->errorMessage = $errorMessage;
         return $this;
     }
+    
+    public function getReservationExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->reservationExpiresAt;
+    }
+    
+    public function setReservationExpiresAt(?\DateTimeImmutable $reservationExpiresAt): static
+    {
+        $this->reservationExpiresAt = $reservationExpiresAt;
+        return $this;
+    }
+    
+    public function getReservedAt(): ?\DateTimeImmutable
+    {
+        return $this->reservedAt;
+    }
+    
+    public function setReservedAt(?\DateTimeImmutable $reservedAt): static
+    {
+        $this->reservedAt = $reservedAt;
+        return $this;
+    }
+    
+    public function getQrCodeToken(): ?string
+    {
+        return $this->qrCodeToken;
+    }
+    
+    public function setQrCodeToken(?string $qrCodeToken): static
+    {
+        $this->qrCodeToken = $qrCodeToken;
+        return $this;
+    }
+    
+    public function getQrCodeExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->qrCodeExpiresAt;
+    }
+    
+    public function setQrCodeExpiresAt(?\DateTimeImmutable $qrCodeExpiresAt): static
+    {
+        $this->qrCodeExpiresAt = $qrCodeExpiresAt;
+        return $this;
+    }
 
     public function isPending(): bool
     {
         return $this->status === TransactionStatus::PENDING;
+    }
+    
+    public function isReserved(): bool
+    {
+        return $this->status === TransactionStatus::RESERVED;
     }
 
     public function isCompleted(): bool
@@ -231,5 +294,23 @@ class Transaction
     public function isRefunded(): bool
     {
         return $this->status === TransactionStatus::REFUNDED;
+    }
+    
+    public function isReservationExpired(): bool
+    {
+        if ($this->status !== TransactionStatus::RESERVED || $this->reservationExpiresAt === null) {
+            return false;
+        }
+        
+        return $this->reservationExpiresAt < new \DateTimeImmutable();
+    }
+    
+    public function isQrCodeExpired(): bool
+    {
+        if ($this->qrCodeExpiresAt === null) {
+            return true;
+        }
+        
+        return $this->qrCodeExpiresAt < new \DateTimeImmutable();
     }
 }

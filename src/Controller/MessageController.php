@@ -16,7 +16,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
+
 
 #[Route('/api/v1')]
 #[OA\Tag(name: 'Messagerie')]
@@ -26,7 +28,8 @@ class MessageController extends AbstractController
     private EntityManagerInterface $entityManager,
     private ConversationRepository $conversationRepository,
     private MessageService $messageService,
-    private SerializerInterface $serializer
+    private SerializerInterface $serializer,
+    private NormalizerInterface $normalizer
   ) {
   }
 
