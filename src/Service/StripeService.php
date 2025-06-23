@@ -29,6 +29,7 @@ final class StripeService {
     {
         $offer = $transaction->getOffer();
         $priceInCents = (int)($transaction->getAmount() * 100);
+        $description = $offer->getDescription() ?? 'Achat de produit alimentaire';
         
         $lineItems = [
             [
@@ -36,7 +37,7 @@ final class StripeService {
                     'currency' => 'eur',
                     'product_data' => [
                         'name' => $offer->getName(),
-                        'description' => $offer->getDescription(),
+                        'description' => $description,
                     ],
                     'unit_amount' => $priceInCents,
                 ],
