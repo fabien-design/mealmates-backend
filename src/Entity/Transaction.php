@@ -303,7 +303,7 @@ class Transaction
 
     public function isFree(): bool
     {
-        return $this->amount === 0;
+        return $this->amount === 0.0;
     }
     
     public function isReservationExpired(): bool

@@ -119,7 +119,7 @@ final class StripeService {
             $transaction->setStatus(TransactionStatus::COMPLETED);
             $transaction->setTransferredAt(new \DateTimeImmutable());
             $transaction->setStripeTransferId($transfer->id);
-            
+            $this->entityManager->persist($transaction);
             $this->entityManager->flush();
 
             $this->logger->info('Transfert réussi vers le vendeur', [

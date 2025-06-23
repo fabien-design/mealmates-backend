@@ -5,6 +5,7 @@ namespace App\Serializer\Normalizer;
 use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\Offer;
+use App\Entity\Transaction;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
@@ -51,7 +52,7 @@ class UserNormalizer implements NormalizerInterface
 
     public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
     {
-        return $data instanceof Offer || $data instanceof Conversation || $data instanceof Message;
+        return $data instanceof Offer || $data instanceof Conversation || $data instanceof Message || $data instanceof Transaction;
     }
 
     public function getSupportedTypes(?string $format): array
@@ -60,6 +61,7 @@ class UserNormalizer implements NormalizerInterface
             Offer::class => true,
             Conversation::class => true,
             Message::class => true,
+            Transaction::class => true,
         ];
     }
 }

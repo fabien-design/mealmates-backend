@@ -59,7 +59,7 @@ class TransactionNotificationService
             'offer_name' => $offer->getName(),
             'seller_id' => $seller->getId(),
             'seller_fullname' => $seller->getFullName(),
-            'is_free_offer' => $transaction->getAmount() == 0,
+            'is_free_offer' => $transaction->isFree(),
         ];
 
         return $this->notifier->emit($buyer, self::TYPE_RESERVATION_CONFIRMED, $content);

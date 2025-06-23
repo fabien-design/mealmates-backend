@@ -138,15 +138,15 @@ class PaymentController extends AbstractController
         
         try {
             $transaction = $this->reservationService->confirmReservation($transaction, $seller);
-            $offer = $transaction->getOffer();
+            $isFreeOffer = $transaction->isFree();
 
             return $this->json([
                 'success' => true,
-                'message' => $offer->getPrice() == 0 
+                'message' => $isFreeOffer 
                     ? 'Réservation confirmée! Vous pouvez maintenant convenir d\'un rendez-vous via la messagerie.'
                     : 'Réservation confirmée! L\'acheteur doit maintenant effectuer le paiement.',
-                'isFreeOffer' => $offer->getPrice() == 0,
-                'needsPayment' => $offer->getPrice() > 0,
+                'isFreeOffer' => $isFreeOffer,
+                'needsPayment' => !$isFreeOffer,
                 'transaction' => $transaction
             ], Response::HTTP_OK, [], ['groups' => ['transaction:read']]);
             
@@ -205,10 +205,8 @@ class PaymentController extends AbstractController
                 'message' => 'Cette transaction n\'est pas confirmée par le vendeur'
             ], Response::HTTP_BAD_REQUEST);
         }
-
-        $offer = $transaction->getOffer();
         
-        if ($offer->getPrice() == 0) {
+        if ($transaction->isFree()) {
             return $this->json([
                 'success' => false,
                 'message' => 'Cette offre est gratuite, aucun paiement requis'
@@ -300,6 +298,7 @@ class PaymentController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
+        /** @var Transaction|null $transaction */
         $transaction = $this->transactionRepository->find($id);
         
         if (!$transaction) {
@@ -316,11 +315,10 @@ class PaymentController extends AbstractController
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $offer = $transaction->getOffer();
         $isReadyForQr = false;
         $errorMessage = '';
 
-        if ($offer->getPrice() == 0) {
+        if ($transaction->isFree()) {
             $isReadyForQr = $transaction->isConfirmed();
             $errorMessage = 'Le vendeur doit d\'abord confirmer la réservation';
         } else {
@@ -378,11 +376,10 @@ class PaymentController extends AbstractController
         response: 200,
         description: 'Transaction validée avec succès'
     )]
-    public function validateQrCode(int $id, Request $request): JsonResponse
+    public function validateQrCode(Transaction $transaction, Request $request): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
-        $transaction = $this->transactionRepository->find($id);
         
         if (!$transaction) {
             return $this->json([
@@ -418,8 +415,8 @@ class PaymentController extends AbstractController
             }
             
             $this->qrCodeService->completeTransactionByQrCode($transaction);
-            
-            if ($transaction->getAmount() > 0 && $transaction->isPending()) {
+
+            if (!$transaction->isFree() && $transaction->isPending()) {
                 $this->stripeService->transferToSeller($transaction);
             }
             

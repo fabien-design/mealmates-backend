@@ -121,12 +121,14 @@ class QrCodeService
             throw new \Exception('Le QR code a expiré.');
         }
 
-        $transaction->setStatus(TransactionStatus::COMPLETED);
-        $transaction->setTransferredAt(new \DateTimeImmutable());
-
+        if ($transaction->isFree()) {
+            $transaction->setStatus(TransactionStatus::COMPLETED);
+            $transaction->setTransferredAt(new \DateTimeImmutable());
+        }
+        
         $transaction->setQrCodeToken(null);
         $transaction->setQrCodeExpiresAt(null);
-
+        
         $offer->setSoldAt(new \DateTime());
         
         $this->entityManager->persist($transaction);
