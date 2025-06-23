@@ -36,10 +36,6 @@ class OfferNormalizer implements NormalizerInterface
             unset($data['address']);
         }
 
-        if (isset($data['seller']) && isset($data['seller']['last_name'])) {
-            $data['seller']['last_name'] = substr($data['seller']['last_name'], 0, 1) . '.';
-        }
-
         if (property_exists($object, 'distance')) {
             $data['distance'] = $object->distance;
         }
