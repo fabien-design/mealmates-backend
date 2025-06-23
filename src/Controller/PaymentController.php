@@ -221,11 +221,17 @@ class PaymentController extends AbstractController
                 'message' => 'Réservation non trouvée'
             ], Response::HTTP_NOT_FOUND);
         }
+
+        if ($transaction->getSeller()->getId() !== $seller->getId()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Vous n\'êtes pas autorisé à confirmer cette réservation'
+            ], Response::HTTP_FORBIDDEN);
+        }
         
         try {
             $transaction = $this->reservationService->confirmReservation($transaction, $seller);
-            
-            // Si l'offre est gratuite, la transaction est déjà terminée
+
             if ($transaction->isCompleted()) {
                 return $this->json([
                     'success' => true,
@@ -233,7 +239,7 @@ class PaymentController extends AbstractController
                     'isFreeOffer' => true
                 ]);
             }
-            
+
             return $this->json([
                 'success' => true,
                 'message' => 'Réservation confirmée! L\'acheteur peut maintenant procéder au paiement.',
@@ -522,6 +528,13 @@ class PaymentController extends AbstractController
                 'success' => false,
                 'message' => 'Transaction non trouvée'
             ], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($transaction->getSeller()->getId() !== $user->getId()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Vous n\'êtes pas autorisé à générer un QR code pour cette transaction'
+            ], Response::HTTP_FORBIDDEN);
         }
         
         try {

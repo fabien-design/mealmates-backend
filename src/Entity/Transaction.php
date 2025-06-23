@@ -281,6 +281,11 @@ class Transaction
         return $this->status === TransactionStatus::RESERVED;
     }
 
+    public function isConfirmed(): bool
+    {
+        return $this->status === TransactionStatus::CONFIRMED;
+    }
+
     public function isCompleted(): bool
     {
         return $this->status === TransactionStatus::COMPLETED;

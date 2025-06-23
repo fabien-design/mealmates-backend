@@ -71,17 +71,8 @@ class ReservationService
             throw new \Exception('Cette réservation a expiré.');
         }
 
-        // Si l'offre est gratuite, la marquer comme terminée
-        if ($transaction->getAmount() == 0) {
-            $transaction->setStatus(TransactionStatus::COMPLETED);
-            $transaction->setTransferredAt(new \DateTimeImmutable());
-            
-            $offer = $transaction->getOffer();
-            $offer->setSoldAt(new \DateTime());
-            
-            $this->entityManager->persist($offer);
-        }
-
+        $transaction->setStatus(TransactionStatus::CONFIRMED);
+        $transaction->setReservationExpiresAt(null);
         $this->entityManager->persist($transaction);
         $this->entityManager->flush();
 
@@ -92,7 +83,7 @@ class ReservationService
 
     public function cancelReservation(Transaction $transaction): Transaction
     {
-        if (!$transaction->isReserved()) {
+        if (!$transaction->isReserved() && !$transaction->isConfirmed()) {
             throw new \Exception('Cette transaction n\'est pas une réservation.');
         }
 
