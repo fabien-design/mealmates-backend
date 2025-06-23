@@ -31,6 +31,20 @@ class TransactionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function findExpiredQrCodes(): array
+    {
+        $now = new \DateTimeImmutable();
+        
+        return $this->createQueryBuilder('t')
+            ->where('t.status = :status')
+            ->andWhere('t.qrCodeExpiresAt IS NOT NULL')
+            ->andWhere('t.qrCodeExpiresAt < :now')
+            ->setParameter('status', TransactionStatus::RESERVED)
+            ->setParameter('now', $now)
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findTransactionsByUser(int $userId): array
     {
         return $this->createQueryBuilder('t')

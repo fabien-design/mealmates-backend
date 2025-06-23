@@ -300,6 +300,11 @@ class Transaction
     {
         return $this->status === TransactionStatus::REFUNDED;
     }
+
+    public function isFree(): bool
+    {
+        return $this->amount === 0;
+    }
     
     public function isReservationExpired(): bool
     {

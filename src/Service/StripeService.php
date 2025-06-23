@@ -2,7 +2,6 @@
 
 namespace App\Service;
 
-use App\Entity\Offer;
 use App\Entity\User;
 use Stripe\StripeClient;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -23,9 +22,13 @@ final class StripeService {
     ) {
     }
 
-    public function generatePaymentLink(Offer $offer, ?User $buyer = null): string
+    /**
+     * Génère un lien de paiement pour une transaction confirmée
+     */
+    public function generatePaymentLinkForTransaction(Transaction $transaction): string
     {
-        $priceInCents = (int)($offer->getPrice() * 100);
+        $offer = $transaction->getOffer();
+        $priceInCents = (int)($transaction->getAmount() * 100);
         
         $lineItems = [
             [
@@ -42,23 +45,21 @@ final class StripeService {
         ];
         
         $metadata = [
+            'transaction_id' => $transaction->getId(),
             'offer_id' => $offer->getId(),
-            'seller_id' => $offer->getSeller()->getId(),
-            'type' => 'c2c_purchase',
+            'seller_id' => $transaction->getSeller()->getId(),
+            'buyer_id' => $transaction->getBuyer()->getId(),
+            'type' => 'confirmed_reservation_payment',
         ];
-        
-        if ($buyer) {
-            $metadata['buyer_id'] = $buyer->getId();
-        }
 
         $session = $this->getStripe()->checkout->sessions->create([
             'line_items' => $lineItems,
             'mode' => 'payment',
             'metadata' => $metadata,
-            'success_url' => "{$this->parameterBag->get('app.backend_url')}/api/v1/payments/success/{$offer->getId()}?session_id={CHECKOUT_SESSION_ID}",
-            'cancel_url' => "{$this->parameterBag->get('app.frontend_url')}/offer/{$offer->getId()}/cancel",
+            'success_url' => "{$this->parameterBag->get('app.frontend_url')}/transaction/{$transaction->getId()}/payment-success?session_id={CHECKOUT_SESSION_ID}",
+            'cancel_url' => "{$this->parameterBag->get('app.frontend_url')}/transaction/{$transaction->getId()}/payment-cancel",
             'payment_intent_data' => [
-                'description' => "Achat MealMates: {$offer->getName()}",
+                'description' => "MealMates - {$offer->getName()} (Transaction #{$transaction->getId()})",
                 'metadata' => $metadata,
             ]
         ]);
@@ -94,7 +95,7 @@ final class StripeService {
     public function transferToSeller(Transaction $transaction): bool
     {
         try {
-            $seller = $transaction->getOffer()->getSeller();
+            $seller = $transaction->getSeller();
 
             if (!$seller->getStripeAccountId()) {
                 throw new \Exception('Le vendeur n\'a pas configuré son compte de réception');
@@ -108,7 +109,7 @@ final class StripeService {
                 'amount' => $sellerAmount,
                 'currency' => 'eur',
                 'destination' => $seller->getStripeAccountId(),
-                'description' => "Vente MealMates: {$transaction->getOffer()->getName()}",
+                'description' => "MealMates - {$transaction->getOffer()->getName()} (Transaction #{$transaction->getId()})",
                 'metadata' => [
                     'transaction_id' => $transaction->getId(),
                     'offer_id' => $transaction->getOffer()->getId(),
@@ -121,6 +122,12 @@ final class StripeService {
             
             $this->entityManager->flush();
 
+            $this->logger->info('Transfert réussi vers le vendeur', [
+                'transaction_id' => $transaction->getId(),
+                'transfer_id' => $transfer->id,
+                'amount' => $sellerAmount / 100
+            ]);
+
             return true;
 
         } catch (\Exception $e) {
@@ -128,6 +135,7 @@ final class StripeService {
                 'transaction_id' => $transaction->getId(),
                 'error' => $e->getMessage(),
             ]);
+            
             $transaction->setStatus(TransactionStatus::FAILED);
             $transaction->setErrorMessage($e->getMessage());
             $this->entityManager->flush();
@@ -189,7 +197,7 @@ final class StripeService {
             ],
             'business_profile' => [
                 'product_description' => 'Vente occasionnelle de produits alimentaires',
-                'mcc' => '5499', // Code pour vente de produits alimentaires divers
+                'mcc' => '5969',
             ],
         ]);
 

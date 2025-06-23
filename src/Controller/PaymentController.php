@@ -39,103 +39,6 @@ class PaymentController extends AbstractController
         Stripe::setApiKey($_ENV['STRIPE_API_SECRET']);
     }
 
-    #[Route('/checkout/{id}', name: 'api_payment_checkout', methods: ['POST'])]
-    #[IsGranted('ROLE_USER')]
-    #[OA\Parameter(
-        name: 'id',
-        description: 'ID de l\'offre à acheter',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'integer')
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'URL de la page de paiement ou confirmation pour offre gratuite',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'success', type: 'boolean', example: true),
-                new OA\Property(property: 'checkoutUrl', type: 'string', example: 'https://checkout.stripe.com/...'),
-                new OA\Property(property: 'message', type: 'string', example: 'Offre gratuite acquise avec succès'),
-                new OA\Property(property: 'isFreeOffer', type: 'boolean', example: false)
-            ]
-        )
-    )]
-    public function createCheckoutSession(int $id): JsonResponse
-    {
-        $offer = $this->offerRepository->find($id);
-
-        if (!$offer) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Offre non trouvée'
-            ], Response::HTTP_NOT_FOUND);
-        }
-        
-        if ($offer->getSoldAt() !== null) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Cette offre a déjà été vendue'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        /** @var User $buyer */
-        $buyer = $this->getUser();
-        $seller = $offer->getSeller();
-
-        if ($buyer->getId() === $seller->getId()) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Vous ne pouvez pas acheter votre propre offre'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        if ($offer->getPrice() == 0) {
-            try {
-                $transaction = new Transaction();
-                $transaction->setOffer($offer);
-                $transaction->setBuyer($buyer);
-                $transaction->setSeller($seller);
-                $transaction->setAmount(0);
-                $transaction->setStatus(TransactionStatus::COMPLETED);
-                $transaction->setCreatedAt(new \DateTimeImmutable());
-                $transaction->setTransferredAt(new \DateTimeImmutable());
-
-                $offer->setBuyer($buyer);
-                $offer->setSoldAt(new \DateTime());
-                
-                $this->entityManager->persist($transaction);
-                $this->entityManager->persist($offer);
-                $this->entityManager->flush();
-                
-                return $this->json([
-                    'success' => true,
-                    'isFreeOffer' => true,
-                    'message' => 'Cette offre gratuite est maintenant à vous!'
-                ]);
-            } catch (\Exception $e) {
-                return $this->json([
-                    'success' => false,
-                    'message' => 'Erreur lors de l\'acquisition de l\'offre gratuite: ' . $e->getMessage()
-                ], Response::HTTP_INTERNAL_SERVER_ERROR);
-            }
-        }
-        
-        try {
-            $checkoutUrl = $this->stripeService->generatePaymentLink($offer, $buyer);
-            
-            return $this->json([
-                'success' => true,
-                'isFreeOffer' => false,
-                'checkoutUrl' => $checkoutUrl
-            ]);
-        } catch (\Exception $e) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Erreur lors de la création de la session de paiement: ' . $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-    
     #[Route('/reserve/{id}', name: 'api_payment_reserve', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
     #[OA\Parameter(
@@ -177,17 +80,21 @@ class PaymentController extends AbstractController
         /** @var User $buyer */
         $buyer = $this->getUser();
         
+        if ($buyer->getId() === $offer->getSeller()->getId()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Vous ne pouvez pas réserver votre propre offre'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+        
         try {
-            $transaction = $this->serialize->normalize(
-                $this->reservationService->createReservation($offer, $buyer),
-                null,
-                ['groups' => ['transaction:read']]);
+            $transaction = $this->reservationService->createReservation($offer, $buyer);
             
             return $this->json([
                 'success' => true,
                 'message' => 'Offre réservée avec succès! Le vendeur doit confirmer la réservation.',
                 'transaction' => $transaction
-            ], Response::HTTP_OK, ['groups' => ['transaction:read']]);
+            ], Response::HTTP_OK, [], ['groups' => ['transaction:read']]);
         } catch (\Exception $e) {
             return $this->json([
                 'success' => false,
@@ -231,26 +138,96 @@ class PaymentController extends AbstractController
         
         try {
             $transaction = $this->reservationService->confirmReservation($transaction, $seller);
-
-            if ($transaction->isCompleted()) {
-                return $this->json([
-                    'success' => true,
-                    'message' => 'Réservation confirmée et transaction terminée pour cette offre gratuite.',
-                    'isFreeOffer' => true
-                ]);
-            }
+            $offer = $transaction->getOffer();
 
             return $this->json([
                 'success' => true,
-                'message' => 'Réservation confirmée! L\'acheteur peut maintenant procéder au paiement.',
-                'isFreeOffer' => false
-            ], Response::HTTP_OK, ['groups' => ['transaction:read']]);
+                'message' => $offer->getPrice() == 0 
+                    ? 'Réservation confirmée! Vous pouvez maintenant convenir d\'un rendez-vous via la messagerie.'
+                    : 'Réservation confirmée! L\'acheteur doit maintenant effectuer le paiement.',
+                'isFreeOffer' => $offer->getPrice() == 0,
+                'needsPayment' => $offer->getPrice() > 0,
+                'transaction' => $transaction
+            ], Response::HTTP_OK, [], ['groups' => ['transaction:read']]);
             
         } catch (\Exception $e) {
             return $this->json([
                 'success' => false,
                 'message' => 'Erreur lors de la confirmation: ' . $e->getMessage()
             ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    #[Route('/transactions/{id}/pay', name: 'api_transaction_pay', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'ID de la transaction à payer',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'URL de redirection vers Stripe',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'success', type: 'boolean', example: true),
+                new OA\Property(property: 'checkoutUrl', type: 'string', example: 'https://checkout.stripe.com/...'),
+                new OA\Property(property: 'message', type: 'string', example: 'Redirection vers le paiement')
+            ]
+        )
+    )]
+    public function payForTransaction(int $id): JsonResponse
+    {
+        $transaction = $this->transactionRepository->find($id);
+
+        if (!$transaction) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Transaction non trouvée'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        /** @var User $buyer */
+        $buyer = $this->getUser();
+        
+        if ($transaction->getBuyer()->getId() !== $buyer->getId()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Vous n\'êtes pas autorisé à payer cette transaction'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        if (!$transaction->isConfirmed()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Cette transaction n\'est pas confirmée par le vendeur'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $offer = $transaction->getOffer();
+        
+        if ($offer->getPrice() == 0) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Cette offre est gratuite, aucun paiement requis'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+        
+        try {
+            $checkoutUrl = $this->stripeService->generatePaymentLinkForTransaction($transaction);
+            
+            return $this->json([
+                'success' => true,
+                'checkoutUrl' => $checkoutUrl,
+                'message' => 'Redirection vers le paiement'
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors de la création du paiement: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
     
@@ -298,6 +275,166 @@ class PaymentController extends AbstractController
         }
     }
 
+    #[Route('/transactions/{id}/generate-qr', name: 'api_transaction_generate_qr', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'ID de la transaction pour laquelle générer un QR code',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'QR code généré avec succès',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'success', type: 'boolean', example: true),
+                new OA\Property(property: 'token', type: 'string'),
+                new OA\Property(property: 'expiresAt', type: 'string', format: 'date-time'),
+                new OA\Property(property: 'message', type: 'string')
+            ]
+        )
+    )]
+    public function generateQrCode(int $id): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $transaction = $this->transactionRepository->find($id);
+        
+        if (!$transaction) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Transaction non trouvée'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($transaction->getBuyer()->getId() !== $user->getId()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Seul l\'acheteur peut générer le QR code'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $offer = $transaction->getOffer();
+        $isReadyForQr = false;
+        $errorMessage = '';
+
+        if ($offer->getPrice() == 0) {
+            $isReadyForQr = $transaction->isConfirmed();
+            $errorMessage = 'Le vendeur doit d\'abord confirmer la réservation';
+        } else {
+            $isReadyForQr = $transaction->isPending();
+            if ($transaction->isConfirmed() && !$transaction->isPending()) {
+                $errorMessage = 'Le paiement doit être effectué avant de générer le QR code';
+            } else if (!$transaction->isConfirmed()) {
+                $errorMessage = 'Le vendeur doit d\'abord confirmer la réservation';
+            }
+        }
+        
+        if (!$isReadyForQr) {
+            return $this->json([
+                'success' => false,
+                'message' => $errorMessage
+            ], Response::HTTP_BAD_REQUEST);
+        }
+        
+        try {
+            $token = $this->qrCodeService->generateQrCode($transaction);
+            
+            return $this->json([
+                'success' => true,
+                'token' => $token,
+                'expiresAt' => $transaction->getQrCodeExpiresAt()->format('Y-m-d\TH:i:s\Z'),
+                'message' => 'QR Code généré. Présentez-le au vendeur lors de la rencontre.'
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors de la génération du QR code: ' . $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+    
+    #[Route('/transactions/{id}/validate-qr', name: 'api_transaction_validate_qr', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'ID de la transaction à valider',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\RequestBody(
+        description: 'Token QR code à valider',
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'token', type: 'string')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Transaction validée avec succès'
+    )]
+    public function validateQrCode(int $id, Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $transaction = $this->transactionRepository->find($id);
+        
+        if (!$transaction) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Transaction non trouvée'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($transaction->getSeller()->getId() !== $user->getId()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Seul le vendeur peut valider le QR code'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $token = $data['token'] ?? null;
+        
+        if (!$token) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Token QR code manquant'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+        
+        try {
+            if ($transaction->getQrCodeToken() !== $token) {
+                throw new \Exception('QR Code invalide');
+            }
+            
+            if ($transaction->isQrCodeExpired()) {
+                throw new \Exception('QR Code expiré');
+            }
+            
+            $this->qrCodeService->completeTransactionByQrCode($transaction);
+            
+            if ($transaction->getAmount() > 0 && $transaction->isPending()) {
+                $this->stripeService->transferToSeller($transaction);
+            }
+            
+            return $this->json([
+                'success' => true,
+                'message' => 'Transaction finalisée avec succès! La remise est confirmée.'
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors de la validation: ' . $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
     #[Route('/webhook', name: 'api_payment_webhook', methods: ['POST'])]
     public function handleWebhook(Request $request): Response
     {
@@ -329,119 +466,6 @@ class PaymentController extends AbstractController
         
         return new Response('Webhook reçu et traité avec succès', Response::HTTP_OK);
     }
-    
-    #[Route('/success/{id}', name: 'api_payment_success', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
-    #[OA\Parameter(
-        name: 'id',
-        description: 'ID de l\'offre achetée',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'integer')
-    )]
-    #[OA\Parameter(
-        name: 'session_id',
-        description: 'ID de la session de paiement Stripe',
-        in: 'query',
-        required: true,
-        schema: new OA\Schema(type: 'string')
-    )]
-    public function confirmPayment(int $id, Request $request): JsonResponse
-    {
-        $sessionId = $request->query->get('session_id');
-        if (!$sessionId) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Paramètre session_id manquant'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-        
-        $offer = $this->offerRepository->find($id);
-        if (!$offer) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Offre non trouvée'
-            ], Response::HTTP_NOT_FOUND);
-        }
-        
-        try {
-            $session = $this->stripeService->getStripe()->checkout->sessions->retrieve($sessionId);
-            
-            if ($session->payment_status === 'paid') {
-                if ($offer->getSoldAt() === null) {
-                    $this->processSuccessfulPayment($session);
-                }
-                
-                return $this->json([
-                    'success' => true,
-                    'message' => 'Paiement réussi ! L\'offre est maintenant à vous. Le vendeur recevra l\'argent une fois la transaction confirmée.'
-                ]);
-            } else {
-                return $this->json([
-                    'success' => false,
-                    'message' => 'Le paiement n\'est pas encore validé.'
-                ]);
-            }
-        } catch (\Exception $e) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Erreur lors de la vérification du paiement: ' . $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    #[Route('/transactions/{id}/confirm', name: 'api_transaction_confirm', methods: ['POST'])]
-    #[IsGranted('ROLE_USER')]
-    #[OA\Parameter(
-        name: 'id',
-        description: 'ID de la transaction à confirmer',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'integer')
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'Transaction confirmée et argent transféré au vendeur'
-    )]
-    public function confirmTransaction(int $id): JsonResponse
-    {
-        /** @var User $user */
-        $user = $this->getUser();
-        $transaction = $this->transactionRepository->find($id);
-
-        if (!$transaction) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Transaction non trouvée'
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        if ($transaction->getBuyer()->getId() !== $user->getId()) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Vous n\'êtes pas autorisé à confirmer cette transaction'
-            ], Response::HTTP_FORBIDDEN);
-        }
-
-        if (!$transaction->isPending()) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Cette transaction ne peut plus être confirmée'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        if ($this->stripeService->transferToSeller($transaction)) {
-            return $this->json([
-                'success' => true,
-                'message' => 'Transaction confirmée ! Le vendeur a reçu le paiement.'
-            ]);
-        } else {
-            return $this->json([
-                'success' => false,
-                'message' => 'Erreur lors du transfert au vendeur'
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
 
     #[Route('/transactions/{id}/refund', name: 'api_transaction_refund', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
@@ -459,7 +483,7 @@ class PaymentController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
         $transaction = $this->transactionRepository->find($id);
-
+        
         if (!$transaction) {
             return $this->json([
                 'success' => false,
@@ -467,7 +491,7 @@ class PaymentController extends AbstractController
             ], Response::HTTP_NOT_FOUND);
         }
 
-        if ($transaction->getBuyer()->getId() !== $user->getId() && !in_array('ROLE_ADMIN', $user->getRoles())) {
+        if ($transaction->getSeller()->getId() !== $user->getId()) {
             return $this->json([
                 'success' => false,
                 'message' => 'Vous n\'êtes pas autorisé à rembourser cette transaction'
@@ -496,187 +520,26 @@ class PaymentController extends AbstractController
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-    
-    #[Route('/transactions/{id}/generate-qr', name: 'api_transaction_generate_qr', methods: ['POST'])]
-    #[IsGranted('ROLE_USER')]
-    #[OA\Parameter(
-        name: 'id',
-        description: 'ID de la transaction pour laquelle générer un QR code',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'integer')
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'QR code généré avec succès',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'success', type: 'boolean', example: true),
-                new OA\Property(property: 'token', type: 'string'),
-                new OA\Property(property: 'expiresAt', type: 'string', format: 'date-time')
-            ]
-        )
-    )]
-    public function generateQrCode(int $id): JsonResponse
-    {
-        /** @var User $user */
-        $user = $this->getUser();
-        $transaction = $this->transactionRepository->find($id);
-        
-        if (!$transaction) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Transaction non trouvée'
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        if ($transaction->getSeller()->getId() !== $user->getId()) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Vous n\'êtes pas autorisé à générer un QR code pour cette transaction'
-            ], Response::HTTP_FORBIDDEN);
-        }
-        
-        try {
-            $token = $this->qrCodeService->generateQrCode($transaction);
-            
-            return $this->json([
-                'success' => true,
-                'token' => $token,
-                'expiresAt' => $transaction->getQrCodeExpiresAt()->format('Y-m-d\TH:i:s\Z')
-            ], Response::HTTP_OK, ['groups' => ['transaction:read']]);
-        } catch (\Exception $e) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Erreur lors de la génération du QR code: ' . $e->getMessage()
-            ], Response::HTTP_BAD_REQUEST);
-        }
-    }
-    
-    #[Route('/verify-qr', name: 'api_verify_qr', methods: ['POST'])]
-    #[IsGranted('ROLE_USER')]
-    #[OA\RequestBody(
-        description: 'QR code token à vérifier',
-        required: true,
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'token', type: 'string')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'QR code vérifié avec succès'
-    )]
-    public function verifyQrCode(Request $request): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
-        $token = $data['token'] ?? null;
-        
-        if (!$token) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Token QR code manquant'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-        
-        try {
-            $this->qrCodeService->verifyQrCode($token);
-            
-            return $this->json([
-                'success' => true,
-                'message' => 'QR code valide',
-            ]);
-        } catch (\Exception $e) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Erreur lors de la vérification du QR code: ' . $e->getMessage()
-            ], Response::HTTP_BAD_REQUEST);
-        }
-    }
-    
-    #[Route('/transactions/{id}/complete-by-qr', name: 'api_transaction_complete_by_qr', methods: ['POST'])]
-    #[IsGranted('ROLE_USER')]
-    #[OA\Parameter(
-        name: 'id',
-        description: 'ID de la transaction à compléter',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'integer')
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'Transaction complétée avec succès'
-    )]
-    public function completeTransactionByQrCode(int $id): JsonResponse
-    {
-        /** @var User $user */
-        $user = $this->getUser();
-        $transaction = $this->transactionRepository->find($id);
-        
-        if (!$transaction) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Transaction non trouvée'
-            ], Response::HTTP_NOT_FOUND);
-        }
-        
-        try {
-            $this->qrCodeService->completeTransactionByQrCode($transaction);
-            
-            return $this->json([
-                'success' => true,
-                'message' => 'Transaction complétée avec succès!'
-            ]);
-        } catch (\Exception $e) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Erreur lors de la validation de la transaction: ' . $e->getMessage()
-            ], Response::HTTP_BAD_REQUEST);
-        }
-    }
 
     private function processSuccessfulPayment($session): void
     {
-        $offerId = $session->metadata->offer_id;
-        $buyerId = $session->metadata->buyer_id ?? null;
-        $sellerId = $session->metadata->seller_id;
+        $transactionId = $session->metadata->transaction_id;
         
-        $offer = $this->offerRepository->find($offerId);
-        if (!$offer || !$buyerId) {
+        if (!$transactionId) {
             return;
         }
 
-        $existingTransaction = $this->transactionRepository->findOneBy([
-            'offer' => $offerId,
-            'status' => TransactionStatus::RESERVED,
-            'buyer' => $buyerId
-        ]);
+        $transaction = $this->transactionRepository->find($transactionId);
         
-        if ($existingTransaction) {
-            $existingTransaction->setStatus(TransactionStatus::PENDING);
-            $existingTransaction->setStripeSessionId($session->id);
-            $existingTransaction->setStripePaymentIntentId($session->payment_intent);
-            
-            $this->entityManager->persist($existingTransaction);
-        } else {
-            $transaction = new Transaction();
-            $transaction->setOffer($offer);
-            $transaction->setBuyer($this->entityManager->getReference(User::class, $buyerId));
-            $transaction->setSeller($this->entityManager->getReference(User::class, $sellerId));
-            $transaction->setAmount($session->amount_total / 100);
-            $transaction->setStatus(TransactionStatus::PENDING);
-            $transaction->setStripeSessionId($session->id);
-            $transaction->setStripePaymentIntentId($session->payment_intent);
-            $transaction->setCreatedAt(new \DateTimeImmutable());
-
-            $offer->setBuyer($transaction->getBuyer());
-
-            $this->entityManager->persist($transaction);
+        if (!$transaction || !$transaction->isConfirmed()) {
+            return;
         }
+
+        $transaction->setStatus(TransactionStatus::PENDING);
+        $transaction->setStripeSessionId($session->id);
+        $transaction->setStripePaymentIntentId($session->payment_intent);
         
-        $offer->setSoldAt(new \DateTime());
-        $this->entityManager->persist($offer);
+        $this->entityManager->persist($transaction);
         $this->entityManager->flush();
     }
 }
