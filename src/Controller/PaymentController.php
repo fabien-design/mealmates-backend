@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Enums\TransactionStatus;
 use App\Repository\OfferRepository;
 use App\Repository\TransactionRepository;
+use App\Service\Notification\TransactionNotificationService;
 use App\Service\QrCodeService;
 use App\Service\ReservationService;
 use App\Service\StripeService;
@@ -34,7 +35,8 @@ class PaymentController extends AbstractController
         private NormalizerInterface $serialize,
         private TransactionRepository $transactionRepository,
         private ReservationService $reservationService,
-        private QrCodeService $qrCodeService
+        private QrCodeService $qrCodeService,
+        private readonly TransactionNotificationService $notificationService
     ) {
         Stripe::setApiKey($_ENV['STRIPE_API_SECRET']);
     }
@@ -538,5 +540,7 @@ class PaymentController extends AbstractController
         
         $this->entityManager->persist($transaction);
         $this->entityManager->flush();
+
+        $this->notificationService->notifySellerBuyerOfTransactionPaid($transaction);
     }
 }

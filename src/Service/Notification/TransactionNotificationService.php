@@ -13,6 +13,7 @@ class TransactionNotificationService
     public const TYPE_RESERVATION_CANCELLED = 'reservation_cancelled';
     public const TYPE_RESERVATION_EXPIRED = 'reservation_expired';
     public const TYPE_TRANSACTION_COMPLETED = 'transaction_completed';
+    public const TYPE_TRANSACTION_PAID = 'transaction_paid';
     public const TYPE_TRANSACTION_QR_VALIDATED = 'transaction_qr_validated';
 
     public function __construct(
@@ -65,7 +66,7 @@ class TransactionNotificationService
         return $this->notifier->emit($buyer, self::TYPE_RESERVATION_CONFIRMED, $content);
     }
 
-    public function notifySellerOfReservationCancellation(Transaction $transaction): bool
+    public function notifySellerBuyerOfReservationCancellation(Transaction $transaction): bool
     {
         $seller = $transaction->getSeller();
         $buyer = $transaction->getBuyer();
@@ -83,7 +84,11 @@ class TransactionNotificationService
             'buyer_fullname' => $buyer->getFullName(),
         ];
 
-        return $this->notifier->emit($seller, self::TYPE_RESERVATION_CANCELLED, $content);
+        $buyerResult = $this->notifier->emit($buyer, self::TYPE_RESERVATION_CANCELLED, $content);
+        $content['is_seller'] = true;
+        $sellerResult = $this->notifier->emit($seller, self::TYPE_RESERVATION_CANCELLED, $content);
+
+        return $buyerResult && $sellerResult;
     }
 
     public function notifyBuyerOfReservationExpiry(Transaction $transaction): bool
@@ -129,6 +134,33 @@ class TransactionNotificationService
         return $sellerResult && $buyerResult;
     }
 
+    public function notifySellerBuyerOfTransactionPaid(Transaction $transaction): bool
+    {
+        $buyer = $transaction->getBuyer();
+        $seller = $transaction->getSeller();
+        $offer = $transaction->getOffer();
+        
+        if (!$buyer || !$seller || $buyer === $seller) {
+            return false;
+        }
+
+        $content = [
+            'transaction_id' => $transaction->getId(),
+            'offer_id' => $offer->getId(),
+            'offer_name' => $offer->getName(),
+        ];
+
+        
+        $buyerResult = $this->notifier->emit($buyer, self::TYPE_TRANSACTION_PAID, $content);
+        $content['buyer_fullname'] = $buyer->getFullName();
+        $content['is_seller'] = true;
+        $sellerResult = $this->notifier->emit($seller, self::TYPE_TRANSACTION_PAID, $content);
+
+        
+        
+        return $sellerResult && $buyerResult;
+    }
+
     public function notifyQrCodeValidation(Transaction $transaction): bool
     {
         $seller = $transaction->getSeller();
@@ -159,6 +191,7 @@ class TransactionNotificationService
             self::TYPE_RESERVATION_CANCELLED,
             self::TYPE_RESERVATION_EXPIRED,
             self::TYPE_TRANSACTION_COMPLETED,
+            self::TYPE_TRANSACTION_PAID,
             self::TYPE_TRANSACTION_QR_VALIDATED,
         ];
     }
