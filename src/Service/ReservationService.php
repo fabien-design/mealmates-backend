@@ -6,6 +6,7 @@ use App\Entity\Offer;
 use App\Entity\Transaction;
 use App\Entity\User;
 use App\Enums\TransactionStatus;
+use App\Repository\TransactionRepository;
 use App\Service\Notification\TransactionNotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -17,7 +18,8 @@ class ReservationService
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ParameterBagInterface $parameterBag,
-        private TransactionNotificationService $notificationService
+        private TransactionNotificationService $notificationService,
+        private readonly TransactionRepository $transactionRepository
     ) {
     }
 
@@ -35,7 +37,7 @@ class ReservationService
         $transaction->setOffer($offer);
         $transaction->setBuyer($buyer);
         $transaction->setSeller($offer->getSeller());
-        $transaction->setAmount($offer->getPrice());
+        $transaction->setAmount($offer->getDynamicPrice() ?? $offer->getPrice());
         $transaction->setStatus(TransactionStatus::RESERVED);
         $transaction->setCreatedAt(new \DateTimeImmutable());
         $transaction->setReservedAt(new \DateTimeImmutable());
@@ -111,8 +113,7 @@ class ReservationService
 
     public function processExpiredReservations(): int
     {
-        $repository = $this->entityManager->getRepository(Transaction::class);
-        $expiredReservations = $repository->findExpiredReservations();
+        $expiredReservations = $this->transactionRepository->findExpiredReservations();
         
         $count = 0;
         foreach ($expiredReservations as $reservation) {
