@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Enums\TransactionStatus;
 use App\Repository\TransactionRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
@@ -78,6 +80,23 @@ class Transaction
     
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $qrCodeExpiresAt = null;
+
+    #[ORM\OneToOne(mappedBy: 'transaction', cascade: ['persist', 'remove'])]
+    #[Groups(['transaction:read'])]
+    private ?Review $buyerReview = null;
+    
+    #[ORM\OneToOne(mappedBy: 'transaction', cascade: ['persist', 'remove'])]
+    #[Groups(['transaction:read'])]
+    private ?Review $sellerReview = null;
+    
+    #[ORM\OneToMany(mappedBy: 'transaction', targetEntity: Review::class, orphanRemoval: true)]
+    private Collection $reviews;
+    
+    public function __construct()
+    {
+        $this->createdAt = new \DateTimeImmutable();
+        $this->reviews = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -322,5 +341,76 @@ class Transaction
         }
         
         return $this->qrCodeExpiresAt < new \DateTimeImmutable();
+    }
+    
+    public function getBuyerReview(): ?Review
+    {
+        return $this->buyerReview;
+    }
+
+    public function setBuyerReview(?Review $buyerReview): static
+    {
+        $this->buyerReview = $buyerReview;
+        return $this;
+    }
+
+    public function getSellerReview(): ?Review
+    {
+        return $this->sellerReview;
+    }
+
+    public function setSellerReview(?Review $sellerReview): static
+    {
+        $this->sellerReview = $sellerReview;
+        return $this;
+    }
+    
+    /**
+     * @return Collection<int, Review>
+     */
+    public function getReviews(): Collection
+    {
+        return $this->reviews;
+    }
+
+    public function addReview(Review $review): static
+    {
+        if (!$this->reviews->contains($review)) {
+            $this->reviews->add($review);
+            $review->setTransaction($this);
+            
+            // Automatically set the appropriate review type based on the reviewer
+            if ($review->getReviewer() === $this->getBuyer()) {
+                $this->setBuyerReview($review);
+            } elseif ($review->getReviewer() === $this->getSeller()) {
+                $this->setSellerReview($review);
+            }
+        }
+
+        return $this;
+    }
+
+    public function removeReview(Review $review): static
+    {
+        if ($this->reviews->removeElement($review)) {
+            // set the owning side to null (unless already changed)
+            if ($review->getTransaction() === $this) {
+                $review->setTransaction(null);
+            }
+            
+            // Remove specific review references
+            if ($this->buyerReview === $review) {
+                $this->buyerReview = null;
+            } elseif ($this->sellerReview === $review) {
+                $this->sellerReview = null;
+            }
+        }
+
+        return $this;
+    }
+    
+    public function canBeReviewed(): bool
+    {
+        return $this->status === TransactionStatus::COMPLETED;
     }
 }
