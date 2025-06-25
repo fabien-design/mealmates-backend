@@ -40,9 +40,9 @@ class ReviewRepository extends ServiceEntityRepository
       ->addSelect('AVG(r.appointmentRespectRating) as avgAppointmentRespect')
       ->addSelect('AVG(r.friendlinessRating) as avgFriendliness')
       ->andWhere('r.reviewed = :user')
-      ->andWhere('r.status = :status')
+      ->andWhere('r.status IN :status')
       ->setParameter('user', $user)
-      ->setParameter('status', ReviewStatus::APPROVED)
+      ->setParameter('status', [ReviewStatus::APPROVED, ReviewStatus::PENDING])
       ->getQuery()
       ->getOneOrNullResult();
 
@@ -70,7 +70,7 @@ class ReviewRepository extends ServiceEntityRepository
   {
     return $this->createQueryBuilder('r')
       ->andWhere('r.status = :status')
-      ->setParameter('status', ReviewStatus::NEEDS_VERIFICATION)
+      ->setParameter('status', ReviewStatus::NEED_VERIFICATION)
       ->orderBy('r.createdAt', 'ASC')
       ->getQuery()
       ->getResult();

@@ -149,7 +149,6 @@ class ReviewController extends AbstractController
 
       $this->entityManager->flush();
 
-      // Update average rating for the reviewed user
       $this->updateUserRating($review->getReviewed());
 
       // Return the created review
@@ -246,38 +245,6 @@ class ReviewController extends AbstractController
     return $this->json($ratings, Response::HTTP_OK);
   }
 
-  #[Route('/admin/reviews/needs-verification', methods: ['GET'])]
-  #[IsGranted('ROLE_ADMIN')]
-  #[OA\Response(
-    response: 200,
-    description: 'Liste des évaluations signalées nécessitant une vérification',
-    content: new OA\JsonContent(
-      type: 'array',
-      items: new OA\Items(ref: '#/components/schemas/Review')
-    )
-  )]
-  #[OA\Response(
-    response: 403,
-    description: 'Accès refusé',
-    content: new OA\JsonContent(
-      properties: [
-        new OA\Property(property: 'message', type: 'string', example: 'Access Denied.')
-      ]
-    )
-  )]
-  public function getReviewsNeedingVerification(ReviewRepository $reviewRepository): JsonResponse
-  {
-    $this->denyAccessUnlessGranted('ROLE_ADMIN');
-
-    $reviews = $reviewRepository->findReviewsNeedingVerification();
-
-    return $this->json(
-      $reviews,
-      Response::HTTP_OK,
-      [],
-      ['groups' => ['review:read', 'admin:read']]
-    );
-  }
 
   #[Route('/reviews/{id}/report', methods: ['POST'])]
   #[OA\RequestBody(
@@ -334,7 +301,7 @@ class ReviewController extends AbstractController
       }
 
       if (!$review->getStatus()->needsVerification() && !$review->getStatus()->isRejected()) {
-        $review->setStatus(ReviewStatus::NEEDS_VERIFICATION);
+        $review->setStatus(ReviewStatus::NEED_VERIFICATION);
         $review->setModerationComment('Signalée: ' . ($data['reason'] ?? 'Aucune raison fournie'));
 
         $this->entityManager->flush();
@@ -348,90 +315,6 @@ class ReviewController extends AbstractController
       return $this->json([
         'success' => false,
         'message' => 'Erreur lors du signalement: ' . $e->getMessage()
-      ], Response::HTTP_BAD_REQUEST);
-    }
-  }
-
-  #[Route('/admin/reviews/{id}/moderate', methods: ['PATCH'])]
-  #[OA\RequestBody(
-    description: 'Données pour modérer une évaluation',
-    required: true,
-    content: new OA\JsonContent(
-      properties: [
-        new OA\Property(property: 'status', type: 'string', enum: ['approved', 'rejected']),
-        new OA\Property(property: 'moderationComment', type: 'string')
-      ]
-    )
-  )]
-  #[OA\Response(
-    response: 200,
-    description: 'Évaluation modérée avec succès',
-    content: new OA\JsonContent(
-      ref: '#/components/schemas/Review'
-    )
-  )]
-  #[OA\Response(
-    response: 400,
-    description: 'Requête invalide',
-    content: new OA\JsonContent(
-      properties: [
-        new OA\Property(property: 'message', type: 'string')
-      ]
-    )
-  )]
-  #[OA\Response(
-    response: 403,
-    description: 'Accès refusé',
-    content: new OA\JsonContent(
-      properties: [
-        new OA\Property(property: 'message', type: 'string', example: 'Access Denied.')
-      ]
-    )
-  )]
-  public function moderateReview(
-    Request $request,
-    Review $review
-  ): JsonResponse {
-    $this->denyAccessUnlessGranted('ROLE_ADMIN');
-
-    try {
-      $data = json_decode($request->getContent(), true);
-
-      if (!$data) {
-        return $this->json([
-          'success' => false,
-          'message' => 'Format JSON invalide'
-        ], Response::HTTP_BAD_REQUEST);
-      }
-
-      if (!isset($data['status']) || !in_array($data['status'], ['approved', 'rejected'])) {
-        return $this->json([
-          'success' => false,
-          'message' => 'Statut invalide'
-        ], Response::HTTP_BAD_REQUEST);
-      }
-
-      $status = $data['status'] === 'approved' ? ReviewStatus::APPROVED : ReviewStatus::REJECTED;
-      $review->setStatus($status);
-      $review->setModerationComment($data['moderationComment'] ?? null);
-      $review->setModeratedAt(new \DateTimeImmutable());
-
-      $this->entityManager->flush();
-
-      if ($status === ReviewStatus::APPROVED) {
-        $this->updateUserRating($review->getReviewed());
-      }
-
-      return $this->json(
-        $review,
-        Response::HTTP_OK,
-        [],
-        ['groups' => ['review:read', 'admin:read']]
-      );
-    } catch (\Exception $e) {
-      return $this->json([
-        'success' => false,
-        'message' => 'Erreur lors de la modération: ' . $e->getMessage()
       ], Response::HTTP_BAD_REQUEST);
     }
   }

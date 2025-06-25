@@ -702,4 +702,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return new ArrayCollection($iterator);
     }
+
+    public function __toString(): string
+    {
+        // obligatoire pour les filtres - sinon 500 sur /admin
+        return $this->getFullName();
+    }
 }

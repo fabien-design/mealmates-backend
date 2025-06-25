@@ -16,6 +16,19 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
+        admin:
+            pattern: ^/admin
+            lazy: true
+            provider: app_user_provider
+            form_login:
+                login_path: admin_login
+                check_path: admin_login_check
+                default_target_path: admin
+                enable_csrf: true
+            logout:
+                path: admin_logout
+                target: admin_login
+
         login:
             pattern: ^/api/v1/login
             stateless: true
@@ -53,6 +66,9 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
+        - { path: ^/admin/login, roles: PUBLIC_ACCESS }
+        - { path: ^/admin/login_check, roles: PUBLIC_ACCESS }
+        - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/api/v1/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/verify-email, roles: PUBLIC_ACCESS }

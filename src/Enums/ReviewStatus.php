@@ -7,7 +7,7 @@ enum ReviewStatus: string
     case PENDING = 'pending';
     case APPROVED = 'approved';
     case REJECTED = 'rejected';
-    case NEEDS_VERIFICATION = 'needs_verification';
+    case NEED_VERIFICATION = 'need_verification';
     
     /**
      * @return array<string, string>
@@ -34,6 +34,6 @@ enum ReviewStatus: string
     
     public function needsVerification(): bool
     {
-        return $this === self::NEEDS_VERIFICATION;
+        return $this === self::NEED_VERIFICATION;
     }
 }
