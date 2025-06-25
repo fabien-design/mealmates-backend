@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace App\Service;
 
@@ -10,7 +10,8 @@ use App\Entity\Transaction;
 use App\Enums\TransactionStatus;
 use Psr\Log\LoggerInterface;
 
-final class StripeService {
+final class StripeService
+{
 
     private StripeClient $stripe;
     private const PLATFORM_FEE_PERCENTAGE = 10; // on fait raquer 10%
@@ -25,12 +26,12 @@ final class StripeService {
     /**
      * Génère un lien de paiement pour une transaction confirmée
      */
-    public function generatePaymentLinkForTransaction(Transaction $transaction): string
+    public function generatePaymentLinkForTransaction(Transaction $transaction, string $redirectURI): string
     {
         $offer = $transaction->getOffer();
-        $priceInCents = (int)($transaction->getAmount() * 100);
+        $priceInCents = (int) ($transaction->getAmount() * 100);
         $description = $offer->getDescription() ?? 'Achat de produit alimentaire';
-        
+
         $lineItems = [
             [
                 'price_data' => [
@@ -44,7 +45,7 @@ final class StripeService {
                 'quantity' => 1,
             ],
         ];
-        
+
         $metadata = [
             'transaction_id' => $transaction->getId(),
             'offer_id' => $offer->getId(),
@@ -57,7 +58,8 @@ final class StripeService {
             'line_items' => $lineItems,
             'mode' => 'payment',
             'metadata' => $metadata,
-            'success_url' => "{$this->parameterBag->get('app.frontend_url')}/transaction/{$transaction->getId()}/payment-success?session_id={CHECKOUT_SESSION_ID}",
+            'customer_email' => $transaction->getBuyer()->getEmail(),
+            'success_url' => "{$this->parameterBag->get('app.frontend_url')}{$redirectURI}",
             'cancel_url' => "{$this->parameterBag->get('app.frontend_url')}/transaction/{$transaction->getId()}/payment-cancel",
             'payment_intent_data' => [
                 'description' => "MealMates - {$offer->getName()} (Transaction #{$transaction->getId()})",
@@ -71,7 +73,7 @@ final class StripeService {
     public function processPayment(string $sessionId): ?Transaction
     {
         $session = $this->getStripe()->checkout->sessions->retrieve($sessionId);
-        
+
         if ($session->payment_status !== 'paid') {
             return null;
         }
@@ -86,7 +88,7 @@ final class StripeService {
         $transaction->setAmount($session->amount_total / 100);
         $transaction->setStatus(TransactionStatus::PENDING);
         $transaction->setCreatedAt(new \DateTimeImmutable());
-        
+
         $this->entityManager->persist($transaction);
         $this->entityManager->flush();
 
@@ -102,8 +104,8 @@ final class StripeService {
                 throw new \Exception('Le vendeur n\'a pas configuré son compte de réception');
             }
 
-            $amountInCents = (int)($transaction->getAmount() * 100);
-            $platformFee = (int)($amountInCents * self::PLATFORM_FEE_PERCENTAGE / 100);
+            $amountInCents = (int) ($transaction->getAmount() * 100);
+            $platformFee = (int) ($amountInCents * self::PLATFORM_FEE_PERCENTAGE / 100);
             $sellerAmount = $amountInCents - $platformFee;
 
             $transfer = $this->getStripe()->transfers->create([
@@ -136,11 +138,11 @@ final class StripeService {
                 'transaction_id' => $transaction->getId(),
                 'error' => $e->getMessage(),
             ]);
-            
+
             $transaction->setStatus(TransactionStatus::FAILED);
             $transaction->setErrorMessage($e->getMessage());
             $this->entityManager->flush();
-            
+
             return false;
         }
     }
@@ -149,11 +151,11 @@ final class StripeService {
     {
         $accountLink = $this->getStripe()->accountLinks->create([
             'account' => $this->getOrCreateExpressAccount($user),
-            'refresh_url' => "{$this->parameterBag->get('app.frontend_url')}/profile/banking/refresh",
-            'return_url' => "{$this->parameterBag->get('app.frontend_url')}/profile/banking/complete",
+            'refresh_url' => "{$this->parameterBag->get('app.frontend_url')}/app/sell",
+            'return_url' => "{$this->parameterBag->get('app.frontend_url')}/app/sell",
             'type' => 'account_onboarding',
         ]);
-        
+
         return $accountLink->url;
     }
 
@@ -204,7 +206,7 @@ final class StripeService {
 
         $user->setStripeAccountId($account->id);
         $this->entityManager->flush();
-        
+
         return $account->id;
     }
 
@@ -222,7 +224,7 @@ final class StripeService {
             $transaction->setStatus(TransactionStatus::REFUNDED);
             $transaction->setRefundedAt(new \DateTimeImmutable());
             $transaction->setStripeRefundId($refund->id);
-            
+
             $this->entityManager->flush();
 
             return true;
@@ -238,6 +240,6 @@ final class StripeService {
 
     public function getStripe(): StripeClient
     {
-        return  $this->stripe ??= new StripeClient($_ENV['STRIPE_API_SECRET']);
+        return $this->stripe ??= new StripeClient($_ENV['STRIPE_API_SECRET']);
     }
 }
