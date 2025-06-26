@@ -412,7 +412,8 @@ class OfferController extends AbstractController
 
         return $this->json([
             'success' => true,
-            'offer' => $offer
+            'offer' => $offer,
+            'message' => 'Offre convertie en don avec succès',
         ], Response::HTTP_OK, [], [
             'groups' => ['offer:read'],
         ]);
