@@ -128,6 +128,13 @@ class Transaction
         return $this;
     }
 
+    public function getAmountWithFees(): float
+    {
+        $feePercentage = (float)$_ENV['SERVICE_FEES'] ?? 0.0;
+
+        return $this->amount * (1 - $feePercentage);
+    }
+
     public function getStatus(): ?TransactionStatus
     {
         return $this->status;
@@ -322,17 +329,5 @@ class Transaction
         }
 
         return $this->qrCodeExpiresAt < new \DateTimeImmutable();
-    }
-
-    public function getOffers(): ?Offer
-    {
-        return $this->offers;
-    }
-
-    public function setOffers(?Offer $offers): static
-    {
-        $this->offers = $offers;
-
-        return $this;
     }
 }

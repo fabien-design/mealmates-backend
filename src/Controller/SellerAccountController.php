@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Transaction;
 use App\Entity\User;
 use App\Repository\TransactionRepository;
 use App\Service\StripeService;
@@ -131,8 +132,8 @@ class SellerAccountController extends AbstractController
             'status' => 'pending'
         ]);
 
-        $totalEarnings = array_sum(array_map(fn($t) => $t->getAmount(), $completedTransactions));
-        $pendingAmount = array_sum(array_map(fn($t) => $t->getAmount(), $pendingTransactions));
+        $totalEarnings = array_sum(array_map(fn(Transaction $t) => $t->getAmountWithFees(), $completedTransactions));
+        $pendingAmount = array_sum(array_map(fn($t) => $t->getAmountWithFees(), $pendingTransactions));
 
         return $this->json([
             'totalEarnings' => $totalEarnings,

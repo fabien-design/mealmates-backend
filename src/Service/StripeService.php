@@ -14,13 +14,14 @@ final class StripeService
 {
 
     private StripeClient $stripe;
-    private const PLATFORM_FEE_PERCENTAGE = 10; // on fait raquer 10%
+    private float $platformFeePercentage; // on fait raquer 10%
 
     public function __construct(
         private ParameterBagInterface $parameterBag,
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
     ) {
+        $this->platformFeePercentage = (float) ($_ENV['SERVICE_FEES'] ?? 0.0);
     }
 
     /**
@@ -105,8 +106,7 @@ final class StripeService
             }
 
             $amountInCents = (int) ($transaction->getAmount() * 100);
-            $platformFee = (int) ($amountInCents * self::PLATFORM_FEE_PERCENTAGE / 100);
-            $sellerAmount = $amountInCents - $platformFee;
+            $sellerAmount = $amountInCents * (1 - $this->platformFeePercentage);
 
             $transfer = $this->getStripe()->transfers->create([
                 'amount' => $sellerAmount,
