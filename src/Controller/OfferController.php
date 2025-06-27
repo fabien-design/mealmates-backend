@@ -179,6 +179,15 @@ class OfferController extends AbstractController
             $offer->setDynamicPrice($offer->getPrice());
             $offer->setBuyer(null);
 
+            // Validate price is either 0 or >= 0.50€
+            $price = $offer->getPrice();
+            if ($price > 0 && $price < 0.50) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Le prix doit être soit gratuit (0€) soit au minimum 0.50€'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
             if (isset($data['allergens']) && is_array($data['allergens']) && count($data['allergens']) > 0) {
                 foreach ($data['allergens'] as $allergenId) {
                     $allergen = $allergenRepository->find($allergenId);
@@ -270,7 +279,6 @@ class OfferController extends AbstractController
 
                 return $this->json([
                     'success' => false,
-                    'message' => 'Erreur de validation',
                     'errors' => $errorMessages
                 ], Response::HTTP_BAD_REQUEST);
             }
@@ -493,7 +501,6 @@ class OfferController extends AbstractController
 
                 return $this->json([
                     'success' => false,
-                    'message' => 'Erreur de validation',
                     'errors' => $errorMessages
                 ], Response::HTTP_BAD_REQUEST);
             }

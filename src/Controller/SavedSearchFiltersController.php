@@ -29,7 +29,8 @@ class SavedSearchFiltersController extends AbstractController
         private EntityManagerInterface $entityManager,
         private SerializerInterface $serializer,
         private ValidatorInterface $validator
-    ) {}
+    ) {
+    }
 
     #[Route('', name: 'api_saved_searches_list', methods: ['GET'])]
     #[OA\Response(
@@ -159,7 +160,6 @@ class SavedSearchFiltersController extends AbstractController
 
                 return $this->json([
                     'success' => false,
-                    'message' => 'Erreur de validation',
                     'errors' => $errorMessages
                 ], Response::HTTP_BAD_REQUEST);
             }
