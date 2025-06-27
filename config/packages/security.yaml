@@ -15,18 +15,31 @@ security:
     dev:
       pattern: ^/(_(profiler|wdt)|css|images|js)/
       security: false
+      
+    admin:
+        pattern: ^/admin
+        lazy: true
+        provider: app_user_provider
+        form_login:
+            login_path: admin_login
+            check_path: admin_login_check
+            default_target_path: admin
+            enable_csrf: true
+        logout:
+            path: admin_logout
+            target: admin_login
 
     login:
-      pattern: ^/api/v1/login
-      stateless: true
-      user_checker: App\Security\UserChecker
-      json_login:
-        check_path: /api/v1/login_check
-        username_path: email
-        password_path: password
-        success_handler: lexik_jwt_authentication.handler.authentication_success
-        failure_handler: App\Security\AuthenticationFailureHandler
-      provider: app_user_provider
+        pattern: ^/api/v1/login
+        stateless: true
+        user_checker: App\Security\UserChecker
+        json_login:
+          check_path: /api/v1/login_check
+          username_path: email
+          password_path: password
+          success_handler: lexik_jwt_authentication.handler.authentication_success
+          failure_handler: App\Security\AuthenticationFailureHandler
+        provider: app_user_provider
 
     api:
       pattern: ^/api/v1
@@ -55,17 +68,20 @@ security:
   # Easy way to control access for large sections of your site
   # Note: Only the *first* access control that matches will be used
   access_control:
-    - { path: ^/api/v1/login, roles: PUBLIC_ACCESS }
-    - { path: ^/api/v1/register, roles: PUBLIC_ACCESS }
-    - { path: ^/api/v1/verify-email, roles: PUBLIC_ACCESS }
-    - { path: ^/api/v1/resend-verification-email, roles: PUBLIC_ACCESS }
-    - { path: ^/api/v1/(login|token/refresh), roles: PUBLIC_ACCESS }
-    - { path: ^/api/v1/user/logged, roles: PUBLIC_ACCESS }
-    - { path: ^/api/v1/payments/webhook, roles: PUBLIC_ACCESS }
-    - { path: ^/api/v1/products/nearby, roles: PUBLIC_ACCESS }
-    - { path: ^/api/v1/products/\d+, roles: PUBLIC_ACCESS }
-    - { path: ^/api/v1/doc, roles: PUBLIC_ACCESS }
-    - { path: ^/api/v1, roles: IS_AUTHENTICATED_FULLY }
+      - { path: ^/admin/login, roles: PUBLIC_ACCESS }
+      - { path: ^/admin/login_check, roles: PUBLIC_ACCESS }
+      - { path: ^/admin, roles: ROLE_ADMIN }
+      - { path: ^/api/v1/login, roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1/register, roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1/verify-email, roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1/resend-verification-email, roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1/(login|token/refresh), roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1/user/logged, roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1/payments/webhook, roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1/products/nearby, roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1/products/\d+, roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1/doc, roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
   security:
