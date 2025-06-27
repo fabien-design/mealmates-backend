@@ -24,7 +24,9 @@ class OfferRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('o')
             ->join('o.address', 'a')
             ->join('o.seller', 's')
-            ->where('o.soldAt IS NULL');
+            ->where('o.expiryDate >= :today')
+            ->andWhere('o.soldAt IS NULL')
+            ->setParameter('today', new \DateTime('today'));
 
         $this->applyFilters($qb, $filters);
 

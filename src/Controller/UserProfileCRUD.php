@@ -4,12 +4,12 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Entity\Address;
-use App\Entity\Allergen;
-use App\Entity\FoodPreference;
+use App\Entity\Transaction;
 use App\Repository\UserRepository;
 use App\Repository\AddressRepository;
 use App\Repository\AllergenRepository;
 use App\Repository\FoodPreferenceRepository;
+use App\Repository\TransactionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,7 +20,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Nelmio\ApiDocBundle\Attribute\Model;
@@ -34,7 +33,8 @@ class UserProfileCRUD extends AbstractController
         private EntityManagerInterface $em,
         private SerializerInterface $serializer,
         private ValidatorInterface $validator,
-        private TagAwareCacheInterface $cache
+        private TagAwareCacheInterface $cache,
+        private readonly TransactionRepository $transactionRepository
     ) {
     }
 
@@ -318,5 +318,49 @@ class UserProfileCRUD extends AbstractController
         ], Response::HTTP_OK, [], [
             'groups' => ['user:profile', 'address:read']
         ]);
+    }
+
+    #[Route('/stats', name: 'api_profile_stats', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Response(
+        response: 200,
+        description: 'Retourne les statistiques de l\'utilisateur',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'totalOrders', type: 'integer', example: 42),
+                new OA\Property(property: 'totalSpent', type: 'number', format: 'float', example: 1234.56),
+                new OA\Property(property: 'totalSales', type: 'number', format: 'float', example: 789.00),
+                new OA\Property(property: 'totalEarnings', type: 'number', format: 'float', example: 456.78),
+                new OA\Property(property: 'totalTransactions', type: 'integer', example: 10),
+                new OA\Property(property: 'averageOrderValue', type: 'number', format: 'float', example: 123.45)
+            ]
+        )
+    )]
+    public function statistics(UserRepository $userRepository): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            throw new AccessDeniedHttpException('Vous devez être connecté pour accéder à cette ressource.');
+        }
+
+        $statistics = [];
+
+        $completedTransactions = $this->transactionRepository->findBy([
+            'seller' => $user,
+            'status' => 'completed'
+        ]);
+
+        $boughtTransactions = $this->transactionRepository->findBy([
+            'buyer' => $user,
+            'status' => 'completed'
+        ]);
+
+        $statistics['totalEarnings'] = array_sum(array_map(fn(Transaction $t) => $t->getAmountWithFees(), $completedTransactions));
+        $statistics['completedTransactions'] = count($completedTransactions);
+        $statistics['boughtTransactions'] = count($boughtTransactions);
+
+        return $this->json($statistics, Response::HTTP_OK);
     }
 }
