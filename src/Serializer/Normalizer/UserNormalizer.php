@@ -36,6 +36,10 @@ class UserNormalizer implements NormalizerInterface
             }
         }
 
+        if (isset($data['sender']) && isset($data['sender']['last_name'])) {
+            $data['sender'] = $this->anonymizeLastName($data['sender']);
+        }
+
         return $data;
     }
 
