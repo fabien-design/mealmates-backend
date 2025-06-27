@@ -97,7 +97,7 @@ class ReservationService
         $this->entityManager->persist($offer);
         $this->entityManager->flush();
 
-        $this->notificationService->notifySellerOfReservationCancellation($transaction);
+        $this->notificationService->notifySellerBuyerOfReservationCancellation($transaction);
 
         return $transaction;
     }

@@ -13,7 +13,7 @@ class Transaction
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['transaction:read'])]
+    #[Groups(['transaction:read', 'offer:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'transactions')]
@@ -32,11 +32,11 @@ class Transaction
     private ?User $seller = null;
 
     #[ORM\Column]
-    #[Groups(['transaction:read'])]
+    #[Groups(['transaction:read', 'offer:read'])]
     private ?float $amount = null;
 
     #[ORM\Column(length: 20, enumType: TransactionStatus::class)]
-    #[Groups(['transaction:read'])]
+    #[Groups(['transaction:read', 'offer:read'])]
     private ?TransactionStatus $status = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -52,7 +52,7 @@ class Transaction
     private ?string $stripeRefundId = null;
 
     #[ORM\Column]
-    #[Groups(['transaction:read'])]
+    #[Groups(['transaction:read', 'offer:read'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(nullable: true)]
@@ -64,18 +64,18 @@ class Transaction
 
     #[ORM\Column(length: 500, nullable: true)]
     private ?string $errorMessage = null;
-    
+
     #[ORM\Column(nullable: true)]
     #[Groups(['transaction:read'])]
     private ?\DateTimeImmutable $reservationExpiresAt = null;
-    
+
     #[ORM\Column(nullable: true)]
     #[Groups(['transaction:read'])]
     private ?\DateTimeImmutable $reservedAt = null;
-    
+
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $qrCodeToken = null;
-    
+
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $qrCodeExpiresAt = null;
 
@@ -126,6 +126,13 @@ class Transaction
     {
         $this->amount = $amount;
         return $this;
+    }
+
+    public function getAmountWithFees(): float
+    {
+        $feePercentage = (float)$_ENV['SERVICE_FEES'] ?? 0.0;
+
+        return $this->amount * (1 - $feePercentage);
     }
 
     public function getStatus(): ?TransactionStatus
@@ -226,45 +233,45 @@ class Transaction
         $this->errorMessage = $errorMessage;
         return $this;
     }
-    
+
     public function getReservationExpiresAt(): ?\DateTimeImmutable
     {
         return $this->reservationExpiresAt;
     }
-    
+
     public function setReservationExpiresAt(?\DateTimeImmutable $reservationExpiresAt): static
     {
         $this->reservationExpiresAt = $reservationExpiresAt;
         return $this;
     }
-    
+
     public function getReservedAt(): ?\DateTimeImmutable
     {
         return $this->reservedAt;
     }
-    
+
     public function setReservedAt(?\DateTimeImmutable $reservedAt): static
     {
         $this->reservedAt = $reservedAt;
         return $this;
     }
-    
+
     public function getQrCodeToken(): ?string
     {
         return $this->qrCodeToken;
     }
-    
+
     public function setQrCodeToken(?string $qrCodeToken): static
     {
         $this->qrCodeToken = $qrCodeToken;
         return $this;
     }
-    
+
     public function getQrCodeExpiresAt(): ?\DateTimeImmutable
     {
         return $this->qrCodeExpiresAt;
     }
-    
+
     public function setQrCodeExpiresAt(?\DateTimeImmutable $qrCodeExpiresAt): static
     {
         $this->qrCodeExpiresAt = $qrCodeExpiresAt;
@@ -275,7 +282,7 @@ class Transaction
     {
         return $this->status === TransactionStatus::PENDING;
     }
-    
+
     public function isReserved(): bool
     {
         return $this->status === TransactionStatus::RESERVED;
@@ -305,22 +312,22 @@ class Transaction
     {
         return $this->amount === 0.0;
     }
-    
+
     public function isReservationExpired(): bool
     {
         if ($this->status !== TransactionStatus::RESERVED || $this->reservationExpiresAt === null) {
             return false;
         }
-        
+
         return $this->reservationExpiresAt < new \DateTimeImmutable();
     }
-    
+
     public function isQrCodeExpired(): bool
     {
         if ($this->qrCodeExpiresAt === null) {
             return true;
         }
-        
+
         return $this->qrCodeExpiresAt < new \DateTimeImmutable();
     }
 }

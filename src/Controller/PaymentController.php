@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Enums\TransactionStatus;
 use App\Repository\OfferRepository;
 use App\Repository\TransactionRepository;
+use App\Service\Notification\TransactionNotificationService;
 use App\Service\QrCodeService;
 use App\Service\ReservationService;
 use App\Service\StripeService;
@@ -34,7 +35,8 @@ class PaymentController extends AbstractController
         private NormalizerInterface $serialize,
         private TransactionRepository $transactionRepository,
         private ReservationService $reservationService,
-        private QrCodeService $qrCodeService
+        private QrCodeService $qrCodeService,
+        private readonly TransactionNotificationService $notificationService
     ) {
         Stripe::setApiKey($_ENV['STRIPE_API_SECRET']);
     }
@@ -69,27 +71,27 @@ class PaymentController extends AbstractController
                 'message' => 'Offre non trouvée'
             ], Response::HTTP_NOT_FOUND);
         }
-        
+
         if ($offer->getSoldAt() !== null || $offer->getBuyer() !== null) {
             return $this->json([
                 'success' => false,
                 'message' => 'Cette offre a déjà été réservée ou vendue'
             ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         /** @var User $buyer */
         $buyer = $this->getUser();
-        
+
         if ($buyer->getId() === $offer->getSeller()->getId()) {
             return $this->json([
                 'success' => false,
                 'message' => 'Vous ne pouvez pas réserver votre propre offre'
             ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         try {
             $transaction = $this->reservationService->createReservation($offer, $buyer);
-            
+
             return $this->json([
                 'success' => true,
                 'message' => 'Offre réservée avec succès! Le vendeur doit confirmer la réservation.',
@@ -102,7 +104,7 @@ class PaymentController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
     }
-    
+
     #[Route('/reservations/{id}/confirm', name: 'api_reservation_confirm', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
     #[OA\Parameter(
@@ -121,7 +123,7 @@ class PaymentController extends AbstractController
         /** @var User $seller */
         $seller = $this->getUser();
         $transaction = $this->transactionRepository->find($id);
-        
+
         if (!$transaction) {
             return $this->json([
                 'success' => false,
@@ -135,21 +137,21 @@ class PaymentController extends AbstractController
                 'message' => 'Vous n\'êtes pas autorisé à confirmer cette réservation'
             ], Response::HTTP_FORBIDDEN);
         }
-        
+
         try {
             $transaction = $this->reservationService->confirmReservation($transaction, $seller);
             $isFreeOffer = $transaction->isFree();
 
             return $this->json([
                 'success' => true,
-                'message' => $isFreeOffer 
+                'message' => $isFreeOffer
                     ? 'Réservation confirmée! Vous pouvez maintenant convenir d\'un rendez-vous via la messagerie.'
                     : 'Réservation confirmée! L\'acheteur doit maintenant effectuer le paiement.',
                 'isFreeOffer' => $isFreeOffer,
                 'needsPayment' => !$isFreeOffer,
                 'transaction' => $transaction
             ], Response::HTTP_OK, [], ['groups' => ['transaction:read']]);
-            
+
         } catch (\Exception $e) {
             return $this->json([
                 'success' => false,
@@ -174,13 +176,13 @@ class PaymentController extends AbstractController
             properties: [
                 new OA\Property(property: 'success', type: 'boolean', example: true),
                 new OA\Property(property: 'checkoutUrl', type: 'string', example: 'https://checkout.stripe.com/...'),
-                new OA\Property(property: 'message', type: 'string', example: 'Redirection vers le paiement')
             ]
         )
     )]
-    public function payForTransaction(int $id): JsonResponse
+    public function payForTransaction(int $id, Request $request): JsonResponse
     {
         $transaction = $this->transactionRepository->find($id);
+        $redirectURI = $request->query->get('redirectURI', null);
 
         if (!$transaction) {
             return $this->json([
@@ -191,7 +193,7 @@ class PaymentController extends AbstractController
 
         /** @var User $buyer */
         $buyer = $this->getUser();
-        
+
         if ($transaction->getBuyer()->getId() !== $buyer->getId()) {
             return $this->json([
                 'success' => false,
@@ -205,22 +207,18 @@ class PaymentController extends AbstractController
                 'message' => 'Cette transaction n\'est pas confirmée par le vendeur'
             ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         if ($transaction->isFree()) {
             return $this->json([
                 'success' => false,
                 'message' => 'Cette offre est gratuite, aucun paiement requis'
             ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         try {
-            $checkoutUrl = $this->stripeService->generatePaymentLinkForTransaction($transaction);
-            
-            return $this->json([
-                'success' => true,
-                'checkoutUrl' => $checkoutUrl,
-                'message' => 'Redirection vers le paiement'
-            ]);
+            $checkoutUrl = $this->stripeService->generatePaymentLinkForTransaction($transaction, $redirectURI);
+
+            return $this->json($checkoutUrl, Response::HTTP_OK);
         } catch (\Exception $e) {
             return $this->json([
                 'success' => false,
@@ -228,7 +226,7 @@ class PaymentController extends AbstractController
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-    
+
     #[Route('/reservations/{id}/cancel', name: 'api_reservation_cancel', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
     #[OA\Parameter(
@@ -243,7 +241,7 @@ class PaymentController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
         $transaction = $this->transactionRepository->find($id);
-        
+
         if (!$transaction) {
             return $this->json([
                 'success' => false,
@@ -257,10 +255,10 @@ class PaymentController extends AbstractController
                 'message' => 'Vous n\'êtes pas autorisé à annuler cette réservation'
             ], Response::HTTP_FORBIDDEN);
         }
-        
+
         try {
             $this->reservationService->cancelReservation($transaction);
-            
+
             return $this->json([
                 'success' => true,
                 'message' => 'Réservation annulée avec succès.'
@@ -300,7 +298,7 @@ class PaymentController extends AbstractController
         $user = $this->getUser();
         /** @var Transaction|null $transaction */
         $transaction = $this->transactionRepository->find($id);
-        
+
         if (!$transaction) {
             return $this->json([
                 'success' => false,
@@ -329,17 +327,17 @@ class PaymentController extends AbstractController
                 $errorMessage = 'Le vendeur doit d\'abord confirmer la réservation';
             }
         }
-        
+
         if (!$isReadyForQr) {
             return $this->json([
                 'success' => false,
                 'message' => $errorMessage
             ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         try {
             $token = $this->qrCodeService->generateQrCode($transaction);
-            
+
             return $this->json([
                 'success' => true,
                 'token' => $token,
@@ -353,7 +351,7 @@ class PaymentController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
     }
-    
+
     #[Route('/transactions/{id}/validate-qr', name: 'api_transaction_validate_qr', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
     #[OA\Parameter(
@@ -363,14 +361,12 @@ class PaymentController extends AbstractController
         required: true,
         schema: new OA\Schema(type: 'integer')
     )]
-    #[OA\RequestBody(
+    #[OA\Parameter(
+        name: 'token',
         description: 'Token QR code à valider',
+        in: 'query',
         required: true,
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'token', type: 'string')
-            ]
-        )
+        schema: new OA\Schema(type: 'string')
     )]
     #[OA\Response(
         response: 200,
@@ -380,7 +376,7 @@ class PaymentController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        
+
         if (!$transaction) {
             return $this->json([
                 'success' => false,
@@ -396,30 +392,30 @@ class PaymentController extends AbstractController
         }
 
         $data = json_decode($request->getContent(), true);
-        $token = $data['token'] ?? null;
-        
+        $token = $request->query->get('token');
+
         if (!$token) {
             return $this->json([
                 'success' => false,
                 'message' => 'Token QR code manquant'
             ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         try {
             if ($transaction->getQrCodeToken() !== $token) {
                 throw new \Exception('QR Code invalide');
             }
-            
+
             if ($transaction->isQrCodeExpired()) {
                 throw new \Exception('QR Code expiré');
             }
-            
+
             $this->qrCodeService->completeTransactionByQrCode($transaction);
 
             if (!$transaction->isFree() && $transaction->isPending()) {
                 $this->stripeService->transferToSeller($transaction);
             }
-            
+
             return $this->json([
                 'success' => true,
                 'message' => 'Transaction finalisée avec succès! La remise est confirmée.'
@@ -438,11 +434,11 @@ class PaymentController extends AbstractController
         $payload = $request->getContent();
         $sigHeader = $request->headers->get('Stripe-Signature');
         $endpointSecret = $_ENV['STRIPE_WEBHOOK_SECRET'] ?? null;
-        
+
         if (!$endpointSecret) {
             return new Response('Webhook secret non configuré', Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        
+
         try {
             $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
         } catch (\UnexpectedValueException $e) {
@@ -450,17 +446,17 @@ class PaymentController extends AbstractController
         } catch (SignatureVerificationException $e) {
             return new Response('Signature invalide', Response::HTTP_BAD_REQUEST);
         }
-        
+
         switch ($event->type) {
             case 'checkout.session.completed':
                 $session = $event->data->object;
                 $this->processSuccessfulPayment($session);
                 break;
-                
+
             case 'payment_intent.succeeded':
                 break;
         }
-        
+
         return new Response('Webhook reçu et traité avec succès', Response::HTTP_OK);
     }
 
@@ -476,11 +472,11 @@ class PaymentController extends AbstractController
     public function refundTransaction(int $id, Request $request): JsonResponse
     {
         // @todo: Implementer cette fonctionnalité - si on a le temps
-    
+
         /** @var User $user */
         $user = $this->getUser();
         $transaction = $this->transactionRepository->find($id);
-        
+
         if (!$transaction) {
             return $this->json([
                 'success' => false,
@@ -521,13 +517,13 @@ class PaymentController extends AbstractController
     private function processSuccessfulPayment($session): void
     {
         $transactionId = $session->metadata->transaction_id;
-        
+
         if (!$transactionId) {
             return;
         }
 
         $transaction = $this->transactionRepository->find($transactionId);
-        
+
         if (!$transaction || !$transaction->isConfirmed()) {
             return;
         }
@@ -535,8 +531,10 @@ class PaymentController extends AbstractController
         $transaction->setStatus(TransactionStatus::PENDING);
         $transaction->setStripeSessionId($session->id);
         $transaction->setStripePaymentIntentId($session->payment_intent);
-        
+
         $this->entityManager->persist($transaction);
         $this->entityManager->flush();
+
+        $this->notificationService->notifySellerBuyerOfTransactionPaid($transaction);
     }
 }

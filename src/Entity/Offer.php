@@ -115,6 +115,13 @@ class Offer
     #[ORM\OneToMany(targetEntity: Conversation::class, mappedBy: 'offer')]
     private Collection $conversations;
 
+    /**
+     * @var Collection<int, Transaction>
+     */
+    #[ORM\OneToMany(targetEntity: Transaction::class, mappedBy: 'offer')]
+    #[Groups(['offer:read'])]
+    private Collection $transactions;
+
     public function __construct()
     {
         $this->allergens = new ArrayCollection();
@@ -124,6 +131,7 @@ class Offer
             $this->expiryAlertSent = false;
         }
         $this->conversations = new ArrayCollection();
+        $this->transactions = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -400,5 +408,35 @@ class Offer
         }
 
         return OfferStatus::ACTIVE;
+    }
+
+    /**
+     * @return Collection<int, Transaction>
+     */
+    public function getTransactions(): Collection
+    {
+        return $this->transactions;
+    }
+
+    public function addTransaction(Transaction $transaction): static
+    {
+        if (!$this->transactions->contains($transaction)) {
+            $this->transactions->add($transaction);
+            $transaction->setOffers($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTransaction(Transaction $transaction): static
+    {
+        if ($this->transactions->removeElement($transaction)) {
+            // set the owning side to null (unless already changed)
+            if ($transaction->getOffers() === $this) {
+                $transaction->setOffers(null);
+            }
+        }
+
+        return $this;
     }
 }

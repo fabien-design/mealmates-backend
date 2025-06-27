@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Transaction;
 use App\Entity\User;
 use App\Repository\TransactionRepository;
 use App\Service\StripeService;
@@ -31,7 +32,6 @@ class SellerAccountController extends AbstractController
         description: 'Crée un lien pour configurer les informations bancaires du vendeur',
         content: new OA\JsonContent(
             properties: [
-                new OA\Property(property: 'success', type: 'boolean', example: true),
                 new OA\Property(property: 'onboardingUrl', type: 'string', example: 'https://connect.stripe.com/setup/...')
             ]
         )
@@ -40,15 +40,11 @@ class SellerAccountController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        
+
         try {
             $onboardingUrl = $this->stripeService->createSellerAccount($user);
-            
-            return $this->json([
-                'success' => true,
-                'onboardingUrl' => $onboardingUrl,
-                'message' => 'Veuillez compléter vos informations bancaires pour recevoir les paiements'
-            ]);
+
+            return $this->json($onboardingUrl, Response::HTTP_OK);
         } catch (\Exception $e) {
             return $this->json([
                 'success' => false,
@@ -76,12 +72,12 @@ class SellerAccountController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
         $stripeAccountId = $user->getStripeAccountId();
-        
+
         $hasAccount = $stripeAccountId !== null;
         $isReady = false;
         $canReceivePayments = false;
         $setupUrl = null;
-        
+
         if ($hasAccount) {
             try {
                 $account = $this->stripeService->getStripe()->accounts->retrieve($stripeAccountId);
@@ -97,7 +93,7 @@ class SellerAccountController extends AbstractController
                 $this->entityManager->flush();
             }
         }
-        
+
         return $this->json([
             'hasAccount' => $hasAccount,
             'isReady' => $isReady,
@@ -125,20 +121,20 @@ class SellerAccountController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        
+
         $completedTransactions = $this->transactionRepository->findBy([
             'seller' => $user,
             'status' => 'completed'
         ]);
-        
+
         $pendingTransactions = $this->transactionRepository->findBy([
             'seller' => $user,
             'status' => 'pending'
         ]);
-        
-        $totalEarnings = array_sum(array_map(fn($t) => $t->getAmount(), $completedTransactions));
-        $pendingAmount = array_sum(array_map(fn($t) => $t->getAmount(), $pendingTransactions));
-        
+
+        $totalEarnings = array_sum(array_map(fn(Transaction $t) => $t->getAmountWithFees(), $completedTransactions));
+        $pendingAmount = array_sum(array_map(fn($t) => $t->getAmountWithFees(), $pendingTransactions));
+
         return $this->json([
             'totalEarnings' => $totalEarnings,
             'pendingAmount' => $pendingAmount,
@@ -152,15 +148,15 @@ class SellerAccountController extends AbstractController
         if (!$hasAccount) {
             return 'Vous devez configurer vos informations bancaires pour vendre sur MealMates';
         }
-        
+
         if (!$isReady) {
             return 'Veuillez compléter vos informations bancaires';
         }
-        
+
         if (!$canReceivePayments) {
             return 'Votre compte est en cours de vérification';
         }
-        
+
         return 'Votre compte est prêt à recevoir des paiements !';
     }
 
@@ -174,19 +170,19 @@ class SellerAccountController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        
+
         if (!$user->getStripeAccountId()) {
             return $this->json([
                 'success' => false,
                 'message' => 'Aucun compte Stripe trouvé pour cet utilisateur'
             ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         try {
             $this->stripeService->deleteSellerAccount($user);
             $user->setStripeAccountId(null);
             $this->entityManager->flush();
-            
+
             return $this->json([
                 'success' => true,
                 'message' => 'Compte vendeur supprimé avec succès'

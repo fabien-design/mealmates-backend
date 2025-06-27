@@ -124,7 +124,6 @@ class NotificationController extends AbstractController
 
         return $this->json([
             'success' => true,
-            'message' => 'Notification marquée comme lue avec succès',
             'notification' => $notification
         ], Response::HTTP_OK, [], ['groups' => ['notification:read']]);
     }
