@@ -90,22 +90,34 @@ class ReviewController extends AbstractController
     $currentUser = $this->getUser();
 
     if (!$currentUser) {
-      return $this->json(['message' => 'Vous devez être connecté pour évaluer une transaction'], Response::HTTP_UNAUTHORIZED);
+      return $this->json([
+        'success' => false,
+        'message' => 'Vous devez être connecté pour évaluer une transaction'
+      ], Response::HTTP_UNAUTHORIZED);
     }
 
     if (!$transaction->canBeReviewed()) {
-      return $this->json(['message' => 'Cette transaction ne peut pas être évaluée'], Response::HTTP_BAD_REQUEST);
+      return $this->json([
+        'success' => false,
+        'message' => 'Cette transaction ne peut pas être évaluée'
+      ], Response::HTTP_BAD_REQUEST);
     }
 
     $isBuyer = $transaction->getBuyer() === $currentUser;
     $isSeller = $transaction->getSeller() === $currentUser;
 
     if (!$isBuyer && !$isSeller) {
-      return $this->json(['message' => 'Vous ne pouvez pas évaluer cette transaction'], Response::HTTP_FORBIDDEN);
+      return $this->json([
+        'success' => false,
+        'message' => 'Vous ne pouvez pas évaluer cette transaction'
+      ], Response::HTTP_FORBIDDEN);
     }
 
     if (($isBuyer && $transaction->getBuyerReview()) || ($isSeller && $transaction->getSellerReview())) {
-      return $this->json(['message' => 'Vous avez déjà évalué cette transaction'], Response::HTTP_BAD_REQUEST);
+      return $this->json([
+        'success' => false,
+        'message' => 'Vous avez déjà évalué cette transaction'
+      ], Response::HTTP_BAD_REQUEST);
     }
 
     try {
