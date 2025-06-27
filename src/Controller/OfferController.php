@@ -130,7 +130,7 @@ class OfferController extends AbstractController
         content: new OA\JsonContent(
             properties: [
                 new OA\Property(property: 'success', type: 'boolean', example: true),
-                new OA\Property(property: 'message', type: 'string', example: 'Offre créée avec succès'),
+                new OA\Property(property: 'message', type: 'string', example: 'Votre produit a été mis en vente avec succès!'),
                 new OA\Property(property: 'offer', type: 'object')
             ]
         )
@@ -280,7 +280,7 @@ class OfferController extends AbstractController
 
             return $this->json([
                 'success' => true,
-                'message' => 'Offre créée avec succès',
+                'message' => 'Votre produit a été mis en vente avec succès!',
                 'offer' => $offer
             ], Response::HTTP_CREATED, [], [
                 'groups' => ['offer:read', 'image:read'],
