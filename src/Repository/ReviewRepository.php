@@ -40,7 +40,7 @@ class ReviewRepository extends ServiceEntityRepository
       ->addSelect('AVG(r.appointmentRespectRating) as avgAppointmentRespect')
       ->addSelect('AVG(r.friendlinessRating) as avgFriendliness')
       ->andWhere('r.reviewed = :user')
-      ->andWhere('r.status IN :status')
+      ->andWhere('r.status IN (:status)')
       ->setParameter('user', $user)
       ->setParameter('status', [ReviewStatus::APPROVED, ReviewStatus::PENDING])
       ->getQuery()
