@@ -5,6 +5,7 @@ namespace App\Serializer\Normalizer;
 use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\Offer;
+use App\Entity\Review;
 use App\Entity\Transaction;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -35,6 +36,10 @@ class UserNormalizer implements NormalizerInterface
             }
         }
 
+        if (isset($data['sender']) && isset($data['sender']['last_name'])) {
+            $data['sender'] = $this->anonymizeLastName($data['sender']);
+        }
+
         return $data;
     }
 
@@ -52,7 +57,7 @@ class UserNormalizer implements NormalizerInterface
 
     public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
     {
-        return $data instanceof Offer || $data instanceof Conversation || $data instanceof Message || $data instanceof Transaction;
+        return $data instanceof Offer || $data instanceof Conversation || $data instanceof Message || $data instanceof Transaction || $data instanceof Review;
     }
 
     public function getSupportedTypes(?string $format): array
@@ -62,6 +67,7 @@ class UserNormalizer implements NormalizerInterface
             Conversation::class => true,
             Message::class => true,
             Transaction::class => true,
+            Review::class => true,
         ];
     }
 }

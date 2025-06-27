@@ -15,6 +15,7 @@ class TransactionNotificationService
     public const TYPE_TRANSACTION_COMPLETED = 'transaction_completed';
     public const TYPE_TRANSACTION_PAID = 'transaction_paid';
     public const TYPE_TRANSACTION_QR_VALIDATED = 'transaction_qr_validated';
+    public const TYPE_REVIEW_REMINDER = 'review_reminder';
 
     public function __construct(
         private readonly Notifier $notifier
@@ -182,6 +183,50 @@ class TransactionNotificationService
 
         return $this->notifier->emit($seller, self::TYPE_TRANSACTION_QR_VALIDATED, $content);
     }
+    
+    public function notifyReviewReminder(Transaction $transaction): bool
+    {
+        $buyer = $transaction->getBuyer();
+        $seller = $transaction->getSeller();
+        $offer = $transaction->getOffer();
+        
+        if (!$buyer || !$seller || $buyer === $seller) {
+            return false;
+        }
+        
+        $buyerReview = $transaction->getBuyerReview();
+        $sellerReview = $transaction->getSellerReview();
+        
+        $result = true;
+
+        if (!$buyerReview) {
+            $buyerContent = [
+                'transaction_id' => $transaction->getId(),
+                'offer_id' => $offer->getId(),
+                'offer_name' => $offer->getName(),
+                'seller_id' => $seller->getId(),
+                'seller_fullname' => $seller->getFullName(),
+                'completed_at' => $transaction->getTransferredAt() ? $transaction->getTransferredAt()->format('Y-m-d H:i:s') : null,
+            ];
+            
+            $result = $result && $this->notifier->emit($buyer, self::TYPE_REVIEW_REMINDER, $buyerContent);
+        }
+
+        if (!$sellerReview) {
+            $sellerContent = [
+                'transaction_id' => $transaction->getId(),
+                'offer_id' => $offer->getId(),
+                'offer_name' => $offer->getName(),
+                'buyer_id' => $buyer->getId(),
+                'buyer_fullname' => $buyer->getFullName(),
+                'completed_at' => $transaction->getTransferredAt() ? $transaction->getTransferredAt()->format('Y-m-d H:i:s') : null,
+            ];
+            
+            $result = $result && $this->notifier->emit($seller, self::TYPE_REVIEW_REMINDER, $sellerContent);
+        }
+        
+        return $result;
+    }
 
     public static function getAvailableTypes(): array
     {
@@ -193,6 +238,7 @@ class TransactionNotificationService
             self::TYPE_TRANSACTION_COMPLETED,
             self::TYPE_TRANSACTION_PAID,
             self::TYPE_TRANSACTION_QR_VALIDATED,
+            self::TYPE_REVIEW_REMINDER,
         ];
     }
 }

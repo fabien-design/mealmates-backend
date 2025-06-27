@@ -71,4 +71,17 @@ class TransactionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function findTransactionsByTransferDate(\DateTimeImmutable $startDate, \DateTimeImmutable $endDate): array
+    {
+        return $this->createQueryBuilder('t')
+        ->where('t.status = :status')
+        ->andWhere('t.transferredAt <= :endDate')
+        ->andWhere('t.transferredAt >= :startDate')
+        ->setParameter('status', TransactionStatus::COMPLETED)
+        ->setParameter('endDate', $endDate)
+        ->setParameter('startDate', $startDate)
+        ->getQuery()
+        ->getResult();
+    }
 }

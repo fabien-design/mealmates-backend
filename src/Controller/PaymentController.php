@@ -28,6 +28,8 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 #[OA\Tag(name: 'Paiements C2C')]
 class PaymentController extends AbstractController
 {
+    private const STRIPE_MINIMUM_AMOUNT = 0.50;
+
     public function __construct(
         private StripeService $stripeService,
         private EntityManagerInterface $entityManager,
@@ -212,6 +214,13 @@ class PaymentController extends AbstractController
             return $this->json([
                 'success' => false,
                 'message' => 'Cette offre est gratuite, aucun paiement requis'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($transaction->getAmount() < self::STRIPE_MINIMUM_AMOUNT) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Le montant minimum pour un paiement est de ' . self::STRIPE_MINIMUM_AMOUNT . '€'
             ], Response::HTTP_BAD_REQUEST);
         }
 

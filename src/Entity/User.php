@@ -167,6 +167,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Conversation::class, mappedBy: 'buyer')]
     private Collection $conversations;
 
+    /**
+     * @var Collection<int, Review>
+     */
+    #[ORM\OneToMany(mappedBy: 'reviewer', targetEntity: Review::class)]
+    private Collection $reviewsGiven;
+
+    /**
+     * @var Collection<int, Review>
+     */
+    #[ORM\OneToMany(mappedBy: 'reviewed', targetEntity: Review::class)]
+    #[Groups(['user:read', 'user:profile'])]
+    private Collection $reviewsReceived;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['user:read', 'user:profile', 'offer:read'])]
+    private ?float $averageRating = null;
+
     public function __construct()
     {
         $this->address = new ArrayCollection();
@@ -178,6 +195,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->notifications = new ArrayCollection();
         $this->savedSearchFilters = new ArrayCollection();
         $this->conversations = new ArrayCollection();
+        $this->reviewsGiven = new ArrayCollection();
+        $this->reviewsReceived = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -589,5 +608,104 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         return $this;
+    }
+
+    /**
+     * @return Collection<int, Review>
+     */
+    public function getReviewsGiven(): Collection
+    {
+        return $this->reviewsGiven;
+    }
+
+    public function addReviewGiven(Review $review): static
+    {
+        if (!$this->reviewsGiven->contains($review)) {
+            $this->reviewsGiven->add($review);
+            $review->setReviewer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeReviewGiven(Review $review): static
+    {
+        if ($this->reviewsGiven->removeElement($review)) {
+            // set the owning side to null (unless already changed)
+            if ($review->getReviewer() === $this) {
+                $review->setReviewer(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Review>
+     */
+    public function getReviewsReceived(): Collection
+    {
+        return $this->reviewsReceived;
+    }
+
+    public function addReviewReceived(Review $review): static
+    {
+        if (!$this->reviewsReceived->contains($review)) {
+            $this->reviewsReceived->add($review);
+            $review->setReviewed($this);
+        }
+
+        return $this;
+    }
+
+    public function removeReviewReceived(Review $review): static
+    {
+        if ($this->reviewsReceived->removeElement($review)) {
+            // set the owning side to null (unless already changed)
+            if ($review->getReviewed() === $this) {
+                $review->setReviewed(null);
+            }
+        }
+
+        return $this;
+    }
+    
+    public function getAverageRating(): ?float
+    {
+        return $this->averageRating;
+    }
+
+    public function setAverageRating(?float $averageRating): static
+    {
+        $this->averageRating = $averageRating;
+
+        return $this;
+    }
+    
+    /**
+     * @return Collection<int, Review>
+     */
+    public function getApprovedReviews(): Collection
+    {
+        $approved = $this->reviewsReceived->filter(function ($review) {
+            return $review->getStatus() === \App\Enums\ReviewStatus::APPROVED;
+        });
+
+        $iterator = $approved instanceof ArrayCollection
+            ? $approved->getIterator()
+            : new \ArrayIterator($approved->toArray());
+
+        $iterator = iterator_to_array($iterator);
+        usort($iterator, function ($a, $b) {
+            return $b->getCreatedAt() <=> $a->getCreatedAt();
+        });
+
+        return new ArrayCollection($iterator);
+    }
+
+    public function __toString(): string
+    {
+        // obligatoire pour les filtres - sinon 500 sur /admin
+        return $this->getFullName();
     }
 }

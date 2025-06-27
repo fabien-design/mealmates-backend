@@ -130,7 +130,7 @@ class OfferController extends AbstractController
         content: new OA\JsonContent(
             properties: [
                 new OA\Property(property: 'success', type: 'boolean', example: true),
-                new OA\Property(property: 'message', type: 'string', example: 'Offre créée avec succès'),
+                new OA\Property(property: 'message', type: 'string', example: 'Votre produit a été mis en vente avec succès!'),
                 new OA\Property(property: 'offer', type: 'object')
             ]
         )
@@ -178,6 +178,15 @@ class OfferController extends AbstractController
             $offer->setSeller($this->getUser());
             $offer->setDynamicPrice($offer->getPrice());
             $offer->setBuyer(null);
+
+            // Validate price is either 0 or >= 0.50€
+            $price = $offer->getPrice();
+            if ($price > 0 && $price < 0.50) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Le prix doit être soit gratuit (0€) soit au minimum 0.50€'
+                ], Response::HTTP_BAD_REQUEST);
+            }
 
             if (isset($data['allergens']) && is_array($data['allergens']) && count($data['allergens']) > 0) {
                 foreach ($data['allergens'] as $allergenId) {
@@ -270,7 +279,6 @@ class OfferController extends AbstractController
 
                 return $this->json([
                     'success' => false,
-                    'message' => 'Erreur de validation',
                     'errors' => $errorMessages
                 ], Response::HTTP_BAD_REQUEST);
             }
@@ -280,7 +288,7 @@ class OfferController extends AbstractController
 
             return $this->json([
                 'success' => true,
-                'message' => 'Offre créée avec succès',
+                'message' => 'Votre produit a été mis en vente avec succès!',
                 'offer' => $offer
             ], Response::HTTP_CREATED, [], [
                 'groups' => ['offer:read', 'image:read'],
@@ -493,7 +501,6 @@ class OfferController extends AbstractController
 
                 return $this->json([
                     'success' => false,
-                    'message' => 'Erreur de validation',
                     'errors' => $errorMessages
                 ], Response::HTTP_BAD_REQUEST);
             }
