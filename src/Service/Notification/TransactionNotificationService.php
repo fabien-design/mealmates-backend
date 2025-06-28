@@ -205,7 +205,8 @@ class TransactionNotificationService
                 'offer_id' => $offer->getId(),
                 'offer_name' => $offer->getName(),
                 'seller_id' => $seller->getId(),
-                'seller_fullname' => $seller->getFullName(),
+                'seller_firstname' => $seller->getFirstName(),
+                'seller_lastname' => $seller->getLastNameInitial(),
                 'completed_at' => $transaction->getTransferredAt() ? $transaction->getTransferredAt()->format('Y-m-d H:i:s') : null,
             ];
             
@@ -218,7 +219,8 @@ class TransactionNotificationService
                 'offer_id' => $offer->getId(),
                 'offer_name' => $offer->getName(),
                 'buyer_id' => $buyer->getId(),
-                'buyer_fullname' => $buyer->getFullName(),
+                'buyer_firstname' => $buyer->getFirstName(),
+                'buyer_lastname' => $buyer->getLastNameInitial(),
                 'completed_at' => $transaction->getTransferredAt() ? $transaction->getTransferredAt()->format('Y-m-d H:i:s') : null,
             ];
             
