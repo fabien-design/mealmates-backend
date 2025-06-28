@@ -113,7 +113,15 @@ class ReviewController extends AbstractController
       ], Response::HTTP_FORBIDDEN);
     }
 
-    if (($isBuyer && $transaction->getBuyerReview()) || ($isSeller && $transaction->getSellerReview())) {
+    $existingReview = null;
+    foreach ($transaction->getReviews() as $review) {
+      if ($review->getReviewer() === $currentUser) {
+        $existingReview = $review;
+        break;
+      }
+    }
+
+    if ($existingReview) {
       return $this->json([
         'success' => false,
         'message' => 'Vous avez déjà évalué cette transaction'
