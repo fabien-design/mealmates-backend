@@ -672,12 +672,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     
     public function getAverageRating(): ?float
     {
-        return $this->averageRating;
+        return $this->averageRating ? round($this->averageRating, 2) : null;
     }
 
     public function setAverageRating(?float $averageRating): static
     {
-        $this->averageRating = $averageRating;
+        $this->averageRating = $averageRating !== null ? round($averageRating, 2) : null;
 
         return $this;
     }

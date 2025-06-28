@@ -124,7 +124,7 @@ class TransactionNotificationService
             'transaction_id' => $transaction->getId(),
             'offer_id' => $offer->getId(),
             'offer_name' => $offer->getName(),
-            'amount' => $transaction->getAmount(),
+            'amount' => $transaction->getAmountWithFees(),
             'completed_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
         ];
 
