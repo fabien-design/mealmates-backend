@@ -43,13 +43,17 @@ class ReviewController extends AbstractController
     description: 'Crée une évaluation pour une transaction',
     content: new OA\JsonContent(
       properties: [
-        new OA\Property(property: 'id', type: 'integer', example: 1),
-        new OA\Property(property: 'reviewer', type: 'object', ref: '#/components/schemas/User'),
-        new OA\Property(property: 'reviewed', type: 'object', ref: '#/components/schemas/User'),
-        new OA\Property(property: 'transaction', type: 'object', ref: '#/components/schemas/Transaction'),
-        new OA\Property(property: 'productQualityRating', type: 'number', format: 'float', example: 4.5),
-        new OA\Property(property: 'appointmentRespectRating', type: 'number', format: 'float', example: 4.0),
-        new OA\Property(property: 'friendlinessRating', type: 'number', format: 'float', example: 5.0),
+        new OA\Property(property: 'success', type: 'boolean', example: true),
+        new OA\Property(property: 'message', type: 'string', example: 'Merci. Vous avez laissé un avis pour John Doe.'),
+        new OA\Property(property: 'review', type: 'object', properties: [
+          new OA\Property(property: 'id', type: 'integer', example: 1),
+          new OA\Property(property: 'reviewer', type: 'object', ref: '#/components/schemas/User'),
+          new OA\Property(property: 'reviewed', type: 'object', ref: '#/components/schemas/User'),
+          new OA\Property(property: 'transaction', type: 'object', ref: '#/components/schemas/Transaction'),
+          new OA\Property(property: 'productQualityRating', type: 'number', format: 'float', example: 4.5),
+          new OA\Property(property: 'appointmentRespectRating', type: 'number', format: 'float', example: 4.0),
+          new OA\Property(property: 'friendlinessRating', type: 'number', format: 'float', example: 5.0),
+        ])
       ]
     )
   )]
@@ -172,9 +176,13 @@ class ReviewController extends AbstractController
 
       $this->updateUserRating($review->getReviewed());
 
-      // Return the created review
+      // Return success response with review
       return $this->json(
-        $review,
+        [
+          'success' => true,
+          'message' => sprintf('Merci. Vous avez laissé un avis pour %s.', $review->getReviewed()->getFullName()),
+          'review' => $review
+        ],
         Response::HTTP_CREATED,
         [],
         ['groups' => ['review:read']]
