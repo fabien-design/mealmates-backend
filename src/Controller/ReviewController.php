@@ -34,7 +34,8 @@ class ReviewController extends AbstractController
     private readonly ValidatorInterface $validator,
     private readonly TokenStorageInterface $tokenStorage,
     private readonly TransactionNotificationService $notificationService
-  ) {}
+  ) {
+  }
 
   #[Route('/transactions/{id}/reviews', methods: ['POST'])]
   #[OA\Response(
@@ -320,7 +321,7 @@ class ReviewController extends AbstractController
         ], Response::HTTP_BAD_REQUEST);
       }
 
-      if (!$review->getStatus()->needsVerification() && !$review->getStatus()->isRejected()) {
+      if ($review->isPending()) {
         $review->setStatus(ReviewStatus::NEED_VERIFICATION);
         $review->setModerationComment('Signalée: ' . ($data['reason'] ?? 'Aucune raison fournie'));
 

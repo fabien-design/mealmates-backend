@@ -14,17 +14,17 @@ class Review
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['review:read', 'transaction:read'])]
+    #[Groups(['review:read', 'transaction:read', 'offer:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'reviewsGiven')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['review:read'])]
+    #[Groups(['review:read', 'offer:read'])]
     private ?User $reviewer = null;
 
     #[ORM\ManyToOne(inversedBy: 'reviewsReceived')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['review:read'])]
+    #[Groups(['review:read', 'offer:read'])]
     private ?User $reviewed = null;
 
     #[ORM\ManyToOne(inversedBy: 'reviews')]
@@ -64,7 +64,7 @@ class Review
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(length: 20, enumType: ReviewStatus::class)]
-    #[Groups(['review:read', 'transaction:read'])]
+    #[Groups(['review:read', 'transaction:read', 'offer:read'])]
     private ?ReviewStatus $status = null;
 
     #[ORM\Column(nullable: true)]
@@ -200,23 +200,23 @@ class Review
     public function getAverageRating(): ?float
     {
         $ratings = [];
-        
+
         if ($this->productQualityRating !== null) {
             $ratings[] = $this->productQualityRating;
         }
-        
+
         if ($this->appointmentRespectRating !== null) {
             $ratings[] = $this->appointmentRespectRating;
         }
-        
+
         if ($this->friendlinessRating !== null) {
             $ratings[] = $this->friendlinessRating;
         }
-        
+
         if (empty($ratings)) {
             return null;
         }
-        
+
         return array_sum($ratings) / count($ratings);
     }
 

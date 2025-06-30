@@ -82,6 +82,7 @@ class Transaction
     private ?\DateTimeImmutable $qrCodeExpiresAt = null;
 
     #[ORM\OneToMany(mappedBy: 'transaction', targetEntity: Review::class, orphanRemoval: true)]
+    #[Groups(['offer:read'])]
     private Collection $reviews;
 
     public function __construct()
@@ -141,7 +142,7 @@ class Transaction
 
     public function getAmountWithFees(): float
     {
-        $feePercentage = (float)$_ENV['SERVICE_FEES'] ?? 0.0;
+        $feePercentage = (float) $_ENV['SERVICE_FEES'] ?? 0.0;
 
         return round($this->amount * (1 - $feePercentage), 2);
     }
@@ -341,7 +342,7 @@ class Transaction
 
         return $this->qrCodeExpiresAt < new \DateTimeImmutable();
     }
-    
+
     #[Groups(['transaction:read'])]
     public function getBuyerReview(): ?Review
     {
@@ -358,7 +359,7 @@ class Transaction
         if ($buyerReview) {
             $this->addReview($buyerReview);
         }
-        
+
         return $this;
     }
 
@@ -378,10 +379,10 @@ class Transaction
         if ($sellerReview) {
             $this->addReview($sellerReview);
         }
-        
+
         return $this;
     }
-    
+
     /**
      * @return Collection<int, Review>
      */
@@ -411,7 +412,7 @@ class Transaction
 
         return $this;
     }
-    
+
     public function canBeReviewed(): bool
     {
         return $this->status === TransactionStatus::COMPLETED;
