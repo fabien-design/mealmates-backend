@@ -33,7 +33,7 @@ class QrCodeService
         }
 
         if ($transaction->isFree()) {
-            if (!$transaction->isConfirmed()) {
+            if (!$transaction->isPending()) {
                 throw new \Exception('La réservation doit être confirmée par le vendeur avant de générer le QR code.');
             }
         } else {
@@ -84,7 +84,7 @@ class QrCodeService
         }
 
         if ($transaction->isFree()) {
-            if (!$transaction->isConfirmed()) {
+            if (!$transaction->isPending()) {
                 throw new \Exception('Cette transaction n\'est pas dans un état valide pour être finalisée.');
             }
         } else {
@@ -108,7 +108,7 @@ class QrCodeService
 
         $offer = $transaction->getOffer();
         if ($transaction->isFree()) {
-            if (!$transaction->isConfirmed()) {
+            if (!$transaction->isPending()) {
                 throw new \Exception('Cette transaction gratuite ne peut pas être finalisée.');
             }
         } else {
@@ -146,7 +146,7 @@ class QrCodeService
         $reason = '';
         
         if ($transaction->isFree()) {
-            if (!$transaction->isConfirmed()) {
+            if (!$transaction->isPending()) {
                 $canGenerate = false;
                 $reason = 'La réservation doit être confirmée par le vendeur.';
             }
