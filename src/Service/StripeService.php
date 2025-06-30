@@ -61,7 +61,7 @@ final class StripeService
             'metadata' => $metadata,
             'customer_email' => $transaction->getBuyer()->getEmail(),
             'success_url' => "{$this->parameterBag->get('app.frontend_url')}{$redirectURI}",
-            'cancel_url' => "{$this->parameterBag->get('app.frontend_url')}/transaction/{$transaction->getId()}/payment-cancel",
+            'cancel_url' => "{$this->parameterBag->get('app.frontend_url')}{$redirectURI}",
             'payment_intent_data' => [
                 'description' => "MealMates - {$offer->getName()} (Transaction #{$transaction->getId()})",
                 'metadata' => $metadata,

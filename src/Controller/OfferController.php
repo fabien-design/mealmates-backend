@@ -505,11 +505,13 @@ class OfferController extends AbstractController
                 ], Response::HTTP_BAD_REQUEST);
             }
 
+            $offer->setDynamicPrice($offer->getPrice());
+
             $em->flush();
 
             return $this->json([
                 'success' => true,
-                'message' => 'Offre modifiée avec succès',
+                'message' => 'Votre offre a été modifiée avec succès.',
                 'offer' => $offer
             ], Response::HTTP_OK, [], [
                 'groups' => ['offer:read'],
