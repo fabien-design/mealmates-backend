@@ -63,8 +63,15 @@ class TransactionNotificationService
             return false;
         }
 
+        $conversation = $this->conversationRepository->findByOfferAndUsers(
+            $offer->getId(),
+            $buyer->getId(),
+            $seller->getId()
+        );
+
         $content = [
             'transaction_id' => $transaction->getId(),
+            'conversation_id' => $conversation ? $conversation->getId() : null,
             'offer_id' => $offer->getId(),
             'offer_name' => $offer->getName(),
             'seller_id' => $seller->getId(),
