@@ -83,7 +83,7 @@ class Transaction
 
     #[ORM\OneToMany(mappedBy: 'transaction', targetEntity: Review::class, orphanRemoval: true)]
     private Collection $reviews;
-    
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -143,7 +143,7 @@ class Transaction
     {
         $feePercentage = (float)$_ENV['SERVICE_FEES'] ?? 0.0;
 
-        return $this->amount * (1 - $feePercentage);
+        return round($this->amount * (1 - $feePercentage), 2);
     }
 
     public function getStatus(): ?TransactionStatus

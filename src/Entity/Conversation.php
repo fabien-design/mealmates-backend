@@ -28,12 +28,10 @@ class Conversation
     #[ORM\JoinColumn(nullable: false)]
     private ?Offer $offer = null;
 
-
     #[ORM\ManyToOne(inversedBy: 'conversations')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['conversation:read'])]
     private ?User $buyer = null;
-
 
     #[ORM\ManyToOne(inversedBy: 'conversations')]
     #[ORM\JoinColumn(nullable: false)]

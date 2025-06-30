@@ -3,7 +3,7 @@
 namespace App\Service\Notification;
 
 use App\Entity\Transaction;
-use App\Entity\User;
+use App\Repository\ConversationRepository;
 use App\Service\Notifier;
 
 class TransactionNotificationService
@@ -18,7 +18,8 @@ class TransactionNotificationService
     public const TYPE_REVIEW_REMINDER = 'review_reminder';
 
     public function __construct(
-        private readonly Notifier $notifier
+        private readonly Notifier $notifier,
+        private readonly ConversationRepository $conversationRepository
     ) {
     }
 
@@ -33,8 +34,15 @@ class TransactionNotificationService
         }
 
         $expiryDate = $transaction->getReservationExpiresAt();
+        $conversation = $this->conversationRepository->findByOfferAndUsers(
+            $offer->getId(),
+            $buyer->getId(),
+            $seller->getId()
+        );
+
         $content = [
             'transaction_id' => $transaction->getId(),
+            'conversation_id' => $conversation ? $conversation->getId() : null,
             'offer_id' => $offer->getId(),
             'offer_name' => $offer->getName(),
             'buyer_id' => $buyer->getId(),
@@ -120,8 +128,15 @@ class TransactionNotificationService
             return false;
         }
 
+        $conversation = $this->conversationRepository->findByOfferAndUsers(
+            $offer->getId(),
+            $buyer->getId(),
+            $seller->getId()
+        );
+
         $content = [
             'transaction_id' => $transaction->getId(),
+            'conversation_id' => $conversation ? $conversation->getId() : null,
             'offer_id' => $offer->getId(),
             'offer_name' => $offer->getName(),
             'amount' => $transaction->getAmountWithFees(),
@@ -145,8 +160,15 @@ class TransactionNotificationService
             return false;
         }
 
+        $conversation = $this->conversationRepository->findByOfferAndUsers(
+            $offer->getId(),
+            $buyer->getId(),
+            $seller->getId()
+        );
+
         $content = [
             'transaction_id' => $transaction->getId(),
+            'conversation_id' => $conversation ? $conversation->getId() : null,
             'offer_id' => $offer->getId(),
             'offer_name' => $offer->getName(),
         ];
@@ -172,8 +194,15 @@ class TransactionNotificationService
             return false;
         }
 
+        $conversation = $this->conversationRepository->findByOfferAndUsers(
+            $offer->getId(),
+            $buyer->getId(),
+            $seller->getId()
+        );
+
         $content = [
             'transaction_id' => $transaction->getId(),
+            'conversation_id' => $conversation ? $conversation->getId() : null,
             'offer_id' => $offer->getId(),
             'offer_name' => $offer->getName(),
             'buyer_id' => $buyer->getId(),

@@ -422,7 +422,6 @@ class Offer
     {
         if (!$this->transactions->contains($transaction)) {
             $this->transactions->add($transaction);
-            $transaction->setOffers($this);
         }
 
         return $this;
@@ -430,12 +429,7 @@ class Offer
 
     public function removeTransaction(Transaction $transaction): static
     {
-        if ($this->transactions->removeElement($transaction)) {
-            // set the owning side to null (unless already changed)
-            if ($transaction->getOffers() === $this) {
-                $transaction->setOffers(null);
-            }
-        }
+        $this->transactions->removeElement($transaction);
 
         return $this;
     }
