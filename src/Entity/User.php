@@ -398,6 +398,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @return Collection<int, FoodPreference>
      */
+    #[Groups(['user:read', 'user:profile'])]
     public function getFoodPreference(): Collection
     {
         return $this->food_preferences;

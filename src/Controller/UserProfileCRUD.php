@@ -183,6 +183,34 @@ class UserProfileCRUD extends AbstractController
             }
         }
 
+        // Handle allergens update
+        if (isset($data['allergenIds']) && is_array($data['allergenIds'])) {
+            foreach ($user->getAllergen() as $allergen) {
+                $user->removeAllergen($allergen);
+            }
+
+            foreach ($data['allergenIds'] as $allergenId) {
+                $allergen = $allergenRepository->find($allergenId);
+                if ($allergen) {
+                    $user->addAllergen($allergen);
+                }
+            }
+        }
+
+        // Handle food preferences update
+        if (isset($data['foodPreferenceIds']) && is_array($data['foodPreferenceIds'])) {
+            foreach ($user->getFoodPreference() as $preference) {
+                $user->removeFoodPreference($preference);
+            }
+
+            foreach ($data['foodPreferenceIds'] as $preferenceId) {
+                $preference = $foodPreferenceRepository->find($preferenceId);
+                if ($preference) {
+                    $user->addFoodPreference($preference);
+                }
+            }
+        }
+
         $errors = $this->validator->validate($user);
         if (count($errors) > 0) {
             $errorMessages = [];

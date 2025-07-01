@@ -44,6 +44,7 @@ class OfferController extends AbstractController
     #[OA\Parameter(name: 'minPrice', in: 'query', required: false, schema: new OA\Schema(type: 'number', format: 'float'))]
     #[OA\Parameter(name: 'maxPrice', in: 'query', required: false, schema: new OA\Schema(type: 'number', format: 'float'))]
     #[OA\Parameter(name: 'dietaryPreferences', in: 'query', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'forMe', in: 'query', required: false, schema: new OA\Schema(type: 'boolean', default: false), description: 'Filtrer les offres selon les préférences alimentaires et allergènes de l\'utilisateur connecté')]
     public function getNearbyProducts(Request $request, OfferRepository $offerRepository): JsonResponse
     {
         $lat = $request->query->get('lat');
@@ -80,6 +81,36 @@ class OfferController extends AbstractController
 
         if ($request->query->has('dietaryPreferences')) {
             $filters['dietaryPreferences'] = explode(',', $request->query->get('dietaryPreferences'));
+        }
+
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if ($user && $request->query->has('forMe')) {
+            $userFoodPreferences = [];
+            foreach ($user->getFoodPreference() as $foodPreference) {
+                $userFoodPreferences[] = $foodPreference->getId();
+            }
+            
+            if (!empty($userFoodPreferences)) {
+                if (isset($filters['dietaryPreferences'])) {
+                    $filters['dietaryPreferences'] = array_unique(array_merge(
+                        $filters['dietaryPreferences'],
+                        $userFoodPreferences
+                    ));
+                } else {
+                    $filters['dietaryPreferences'] = $userFoodPreferences;
+                }
+            }
+
+            $userAllergens = [];
+            foreach ($user->getAllergen() as $allergen) {
+                $userAllergens[] = $allergen->getId();
+            }
+            
+            if (!empty($userAllergens)) {
+                $filters['excludeAllergens'] = $userAllergens;
+            }
         }
 
         $offers = $offerRepository->findNearbyOffers($lat, $lng, $radius, $filters);

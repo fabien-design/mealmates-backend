@@ -112,9 +112,15 @@ class OfferRepository extends ServiceEntityRepository
         }
 
         if (!empty($filters['dietaryPreferences'])) {
-            $qb->join('o.food_preferences', 'fp')
-                ->andWhere('fp.name IN (:dietaryPreferences)')
+            $qb->leftJoin('o.food_preferences', 'fp')
+                ->andWhere('fp.id IN (:dietaryPreferences)')
                 ->setParameter('dietaryPreferences', $filters['dietaryPreferences']);
+        }
+
+        if (!empty($filters['excludeAllergens'])) {
+            $qb->leftJoin('o.allergens', 'al')
+                ->andWhere('al.id NOT IN (:excludeAllergens) OR al.id IS NULL')
+                ->setParameter('excludeAllergens', $filters['excludeAllergens']);
         }
     }
 
