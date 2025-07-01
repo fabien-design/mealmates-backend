@@ -481,6 +481,20 @@ class OfferController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
 
+        if ($offer->getIsDeletedAt() !== null) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Impossible de modifier une offre supprimée'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($offer->getBuyer() !== null) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Impossible de modifier avec une réservation'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
         try {
             $serializer->deserialize(
                 $request->getContent(),
