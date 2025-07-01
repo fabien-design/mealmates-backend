@@ -5,10 +5,12 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Entity\Address;
 use App\Entity\Transaction;
+use App\Enums\OfferStatus;
 use App\Repository\UserRepository;
 use App\Repository\AddressRepository;
 use App\Repository\AllergenRepository;
 use App\Repository\FoodPreferenceRepository;
+use App\Repository\OfferRepository;
 use App\Repository\TransactionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -321,8 +323,9 @@ class UserProfileCRUD extends AbstractController
         ]);
     }
 
-    #[Route('/stats', name: 'api_profile_stats', methods: ['GET'])]
+    #[Route('/{id}/stats', name: 'api_user_stats', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
+    #[OA\Parameter(name: 'id', in: 'path', description: 'ID de l\'utilisateur', required: true, schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(
         response: 200,
         description: 'Retourne les statistiques de l\'utilisateur',
@@ -337,14 +340,10 @@ class UserProfileCRUD extends AbstractController
             ]
         )
     )]
-    public function statistics(UserRepository $userRepository): JsonResponse
+    public function statistics(User $user, UserRepository $userRepository): JsonResponse
     {
         /** @var User $user */
-        $user = $this->getUser();
-
-        if (!$user) {
-            throw new AccessDeniedHttpException('Vous devez être connecté pour accéder à cette ressource.');
-        }
+        $loggedUser = $this->getUser();
 
         $statistics = [];
 
@@ -353,15 +352,73 @@ class UserProfileCRUD extends AbstractController
             'status' => 'completed'
         ]);
 
-        $boughtTransactions = $this->transactionRepository->findBy([
-            'buyer' => $user,
-            'status' => 'completed'
-        ]);
-
-        $statistics['totalEarnings'] = array_sum(array_map(fn(Transaction $t) => $t->getAmountWithFees(), $completedTransactions));
         $statistics['completedTransactions'] = count($completedTransactions);
-        $statistics['boughtTransactions'] = count($boughtTransactions);
+        
+        if ($loggedUser) {
+            $statistics['totalEarnings'] = array_sum(array_map(fn(Transaction $t) => $t->getAmountWithFees(), $completedTransactions));
+            $boughtTransactions = $this->transactionRepository->findBy([
+                'buyer' => $user,
+                'status' => 'completed'
+            ]);
+            $statistics['boughtTransactions'] = count($boughtTransactions);
+        }
 
         return $this->json($statistics, Response::HTTP_OK);
+    }
+
+    #[Route('/{id}/offers', name: 'api_profile_show_by_id_offers', methods: ['GET'])]
+    #[OA\Parameter(name: 'id', in: 'path', description: 'ID de l\'utilisateur', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(
+        response: 200,
+        description: 'Retourne les offres de l\'utilisateur spécifié',
+        content: new Model(type: User::class, groups: ['user:read', 'user:profile'])
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Utilisateur non trouvé',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'message', type: 'string', example: 'Utilisateur non trouvé')
+            ]
+        )
+    )]
+    public function showByIdOffers(User $user, OfferRepository $offerRepository): JsonResponse
+    {
+        if (!$user) {
+            throw new NotFoundHttpException('Utilisateur non trouvé');
+        }
+
+        $offers = $offerRepository->findUserOffersByStatus($user, OfferStatus::ACTIVE);
+
+        return $this->json($offers, Response::HTTP_OK, [], [
+            'groups' => ['offer:read'],
+        ]);
+    }
+
+    #[Route('/{id}', name: 'api_profile_show_by_id', methods: ['GET'])]
+    #[OA\Parameter(name: 'id', in: 'path', description: 'ID de l\'utilisateur', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(
+        response: 200,
+        description: 'Retourne le profil de l\'utilisateur spécifié',
+        content: new Model(type: User::class, groups: ['user:read', 'user:profile', 'address:read', 'allergen:read', 'food_preference:read'])
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Utilisateur non trouvé',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'message', type: 'string', example: 'Utilisateur non trouvé')
+            ]
+        )
+    )]
+    public function showById(User $user, UserRepository $userRepository): JsonResponse
+    {
+        if (!$user) {
+            throw new NotFoundHttpException('Utilisateur non trouvé');
+        }
+
+        return $this->json($user, Response::HTTP_OK, [], [
+            'groups' => ['user:show'],
+        ]);
     }
 }

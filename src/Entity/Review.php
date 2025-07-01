@@ -14,12 +14,12 @@ class Review
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['review:read', 'transaction:read', 'offer:read'])]
+    #[Groups(['review:read', 'user:show', 'transaction:read', 'offer:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'reviewsGiven')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['review:read', 'offer:read'])]
+    #[Groups(['review:read:reviewer', 'offer:read'])]
     private ?User $reviewer = null;
 
     #[ORM\ManyToOne(inversedBy: 'reviewsReceived')]
@@ -33,7 +33,7 @@ class Review
     private ?Transaction $transaction = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['review:read', 'review:write', 'transaction:read', 'user:read'])]
+    #[Groups(['review:read', 'user:show', 'review:write', 'transaction:read', 'user:read'])]
     #[Assert\Range(
         min: 1,
         max: 5,
@@ -42,7 +42,7 @@ class Review
     private ?float $productQualityRating = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['review:read', 'review:write', 'transaction:read', 'user:read'])]
+    #[Groups(['review:read', 'user:show', 'review:write', 'transaction:read', 'user:read'])]
     #[Assert\Range(
         min: 1,
         max: 5,
@@ -51,7 +51,7 @@ class Review
     private ?float $appointmentRespectRating = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['review:read', 'review:write', 'transaction:read', 'user:read'])]
+    #[Groups(['review:read', 'user:show', 'review:write', 'transaction:read', 'user:read'])]
     #[Assert\Range(
         min: 1,
         max: 5,
@@ -60,7 +60,7 @@ class Review
     private ?float $friendlinessRating = null;
 
     #[ORM\Column]
-    #[Groups(['review:read'])]
+    #[Groups(['review:read', 'user:show'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(length: 20, enumType: ReviewStatus::class)]
@@ -197,6 +197,7 @@ class Review
         return $this;
     }
 
+    #[Groups(['review:read', 'user:show', 'transaction:read', 'offer:read'])]
     public function getAverageRating(): ?float
     {
         $ratings = [];
@@ -218,6 +219,12 @@ class Review
         }
 
         return array_sum($ratings) / count($ratings);
+    }
+
+    #[Groups(['review:read'])]
+    public function getOffer(): ?Offer
+    {
+        return $this->transaction?->getOffer();
     }
 
     public function isPending(): bool

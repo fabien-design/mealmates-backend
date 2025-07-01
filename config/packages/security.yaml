@@ -77,6 +77,9 @@ security:
       - { path: ^/api/v1/resend-verification-email, roles: PUBLIC_ACCESS }
       - { path: ^/api/v1/(login|token/refresh), roles: PUBLIC_ACCESS }
       - { path: ^/api/v1/user/logged, roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1/user/\d+, roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1/user/\d+/stats, roles: PUBLIC_ACCESS }
+      - { path: ^/api/v1/users/\d+/reviews, roles: PUBLIC_ACCESS }
       - { path: ^/api/v1/payments/webhook, roles: PUBLIC_ACCESS }
       - { path: ^/api/v1/products/nearby, roles: PUBLIC_ACCESS }
       - { path: ^/api/v1/products/\d+, roles: PUBLIC_ACCESS }
