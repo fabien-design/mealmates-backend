@@ -69,4 +69,18 @@ class NotificationRepository extends ServiceEntityRepository
             ->getQuery()
             ->execute();
     }
+
+    public function findGamificationNotifications(int $userId, array $types, int $limit = 10, int $offset = 0): array
+    {
+        return $this->createQueryBuilder('n')
+            ->where('n.user = :userId')
+            ->andWhere('n.type IN (:types)')
+            ->setParameter('userId', $userId)
+            ->setParameter('types', $types)
+            ->orderBy('n.createdAt', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }

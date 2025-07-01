@@ -184,6 +184,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:show', 'user:profile', 'offer:read', 'review:read:reviewer'])]
     private ?float $averageRating = null;
 
+    #[ORM\Column]
+    #[Groups(['user:read', 'user:show', 'user:profile'])]
+    private int $credits = 0;
+
+    /**
+     * @var Collection<int, UserBadge>
+     */
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserBadge::class, orphanRemoval: true)]
+    #[Groups(['user:read', 'user:profile', 'user:show'])]
+    private Collection $userBadges;
+
+    /**
+     * @var Collection<int, UserProgress>
+     */
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserProgress::class, orphanRemoval: true)]
+    #[Groups(['user:read', 'user:profile'])]
+    private Collection $progressTrackers;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    #[Groups(['user:read', 'user:profile'])]
+    private ?\DateTimeImmutable $lastLogin = null;
+
     public function __construct()
     {
         $this->address = new ArrayCollection();
@@ -197,6 +219,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->conversations = new ArrayCollection();
         $this->reviewsGiven = new ArrayCollection();
         $this->reviewsReceived = new ArrayCollection();
+        $this->userBadges = new ArrayCollection();
+        $this->progressTrackers = new ArrayCollection();
+        $this->credits = 0;
     }
 
     public function getId(): ?int
@@ -281,7 +306,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getLastNameInitial(): ?string
     {
-        return $this->last_name ? strtoupper($this->last_name[0]). '.' : '';
+        return $this->last_name ? strtoupper($this->last_name[0]) . '.' : '';
     }
 
     public function setLastName(?string $last_name): static
@@ -340,7 +365,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setStripeAccountId(?string $stripeAccountId): self
     {
         $this->stripeAccountId = $stripeAccountId;
-        
+
         return $this;
     }
 
@@ -674,7 +699,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
-    
+
     public function getAverageRating(): ?float
     {
         return $this->averageRating ? round($this->averageRating, 2) : null;
@@ -686,7 +711,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
-    
+
     /**
      * @return Collection<int, Review>
      */
@@ -712,5 +737,120 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // obligatoire pour les filtres - sinon 500 sur /admin
         return $this->getFullName();
+    }
+
+    public function getCredits(): int
+    {
+        return $this->credits;
+    }
+
+    public function setCredits(int $credits): static
+    {
+        $this->credits = $credits;
+
+        return $this;
+    }
+
+    public function addCredits(int $amount): static
+    {
+        $this->credits += $amount;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, UserBadge>
+     */
+    public function getUserBadges(): Collection
+    {
+        return $this->userBadges;
+    }
+
+    public function addUserBadge(UserBadge $userBadge): static
+    {
+        if (!$this->userBadges->contains($userBadge)) {
+            $this->userBadges->add($userBadge);
+            $userBadge->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUserBadge(UserBadge $userBadge): static
+    {
+        if ($this->userBadges->removeElement($userBadge)) {
+            // set the owning side to null (unless already changed)
+            if ($userBadge->getUser() === $this) {
+                $userBadge->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Badge>
+     */
+    #[Groups(['user:read', 'user:profile', 'user:show'])]
+    public function getBadges(): array
+    {
+        $badges = [];
+        foreach ($this->userBadges as $userBadge) {
+            $badges[] = $userBadge->getBadge();
+        }
+        return $badges;
+    }
+
+    /**
+     * @return Collection<int, UserProgress>
+     */
+    public function getProgressTrackers(): Collection
+    {
+        return $this->progressTrackers;
+    }
+
+    public function addProgressTracker(UserProgress $progressTracker): static
+    {
+        if (!$this->progressTrackers->contains($progressTracker)) {
+            $this->progressTrackers->add($progressTracker);
+            $progressTracker->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeProgressTracker(UserProgress $progressTracker): static
+    {
+        if ($this->progressTrackers->removeElement($progressTracker)) {
+            // set the owning side to null (unless already changed)
+            if ($progressTracker->getUser() === $this) {
+                $progressTracker->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getProgressByType(string $type): ?UserProgress
+    {
+        foreach ($this->progressTrackers as $progress) {
+            if ($progress->getProgressType() === $type) {
+                return $progress;
+            }
+        }
+
+        return null;
+    }
+
+    public function getLastLogin(): ?\DateTimeImmutable
+    {
+        return $this->lastLogin;
+    }
+
+    public function setLastLogin(?\DateTimeImmutable $lastLogin): static
+    {
+        $this->lastLogin = $lastLogin;
+
+        return $this;
     }
 }
