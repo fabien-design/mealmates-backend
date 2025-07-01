@@ -181,7 +181,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $reviewsReceived;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['user:read', 'user:show', 'user:profile', 'offer:read'])]
+    #[Groups(['user:read', 'user:show', 'user:profile', 'offer:read', 'review:read:reviewer'])]
     private ?float $averageRating = null;
 
     public function __construct()
