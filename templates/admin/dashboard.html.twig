@@ -35,8 +35,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="text-white-75 small">Utilisateurs</div>
-                            <div class="text-lg fw-bold">{{ users_count ?? 0 }}</div>
+                            <div class="text-white-75 small">Utilisateurs en attente</div>
+                            <div class="text-lg fw-bold">{{ pending_users_count ?? 0 }}</div>
                         </div>
                         <div class="align-self-center">
                             <i class="fas fa-users fa-2x"></i>
@@ -44,7 +44,7 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small text-white stretched-link" href="{{ ea_url().setController('App\\Controller\\Admin\\UserCrudController') }}">
+                    <a class="small text-white stretched-link" href="{{ ea_url().setController('App\\Controller\\Admin\\UserToReviewCrudController') }}">
                         Gérer les utilisateurs
                     </a>
                     <div class="small text-white">
@@ -60,7 +60,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <div class="text-white-75 small">Offres</div>
-                            <div class="text-lg fw-bold">{{ offers_count ?? 0 }}</div>
+                            <div class="text-lg fw-bold">{{ pending_offers_count ?? 0 }}</div>
                         </div>
                         <div class="align-self-center">
                             <i class="fas fa-utensils fa-2x"></i>
@@ -68,7 +68,7 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small text-white stretched-link" href="{{ ea_url().setController('App\\Controller\\Admin\\OfferCrudController') }}">
+                    <a class="small text-white stretched-link" href="{{ ea_url().setController('App\\Controller\\Admin\\OfferToReviewCrudController') }}">
                         Voir les offres
                     </a>
                     <div class="small text-white">

@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Entity\Address;
 use App\Entity\Transaction;
 use App\Enums\OfferStatus;
+use App\Enums\UserStatus;
 use App\Repository\UserRepository;
 use App\Repository\AddressRepository;
 use App\Repository\AllergenRepository;
@@ -352,7 +353,6 @@ class UserProfileCRUD extends AbstractController
     }
 
     #[Route('/{id}/stats', name: 'api_user_stats', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
     #[OA\Parameter(name: 'id', in: 'path', description: 'ID de l\'utilisateur', required: true, schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(
         response: 200,
@@ -381,7 +381,7 @@ class UserProfileCRUD extends AbstractController
         ]);
 
         $statistics['completedTransactions'] = count($completedTransactions);
-        
+
         if ($loggedUser) {
             $statistics['totalEarnings'] = array_sum(array_map(fn(Transaction $t) => $t->getAmountWithFees(), $completedTransactions));
             $boughtTransactions = $this->transactionRepository->findBy([
@@ -449,4 +449,37 @@ class UserProfileCRUD extends AbstractController
             'groups' => ['user:show'],
         ]);
     }
+
+    #[Route('s/{id}/report', name: 'api_user_report_user', methods: ['POST'])]
+    public function reportUser(
+        Request $request,
+        User $user
+    ): JsonResponse {
+        try {
+            $data = json_decode($request->getContent(), true);
+
+            if (!$data) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Format JSON invalide'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $user->setStatus(UserStatus::NEED_VERIFICATION);
+            $user->setModerationComment('Signalée: ' . ($data['reason'] ?? 'Aucune raison fournie'));
+            $this->em->flush();
+
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Utilisateur signalée avec succès'
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors du signalement: ' . $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
 }

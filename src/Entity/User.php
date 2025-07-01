@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enums\UserStatus;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -184,6 +185,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:show', 'user:profile', 'offer:read', 'review:read:reviewer'])]
     private ?float $averageRating = null;
 
+    #[ORM\Column(length: 20, enumType: UserStatus::class, nullable: true)]
+    #[Groups(['user:read'])]
+    private ?UserStatus $status = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['user:read'])]
+    private ?\DateTimeImmutable $moderatedAt = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user:read', 'admin:read'])]
+    private ?string $moderationComment = null;
+
     public function __construct()
     {
         $this->address = new ArrayCollection();
@@ -197,6 +210,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->conversations = new ArrayCollection();
         $this->reviewsGiven = new ArrayCollection();
         $this->reviewsReceived = new ArrayCollection();
+        $this->status = UserStatus::APPROVED;
     }
 
     public function getId(): ?int
@@ -281,7 +295,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getLastNameInitial(): ?string
     {
-        return $this->last_name ? strtoupper($this->last_name[0]). '.' : '';
+        return $this->last_name ? strtoupper($this->last_name[0]) . '.' : '';
     }
 
     public function setLastName(?string $last_name): static
@@ -340,7 +354,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setStripeAccountId(?string $stripeAccountId): self
     {
         $this->stripeAccountId = $stripeAccountId;
-        
+
         return $this;
     }
 
@@ -674,7 +688,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
-    
+
     public function getAverageRating(): ?float
     {
         return $this->averageRating ? round($this->averageRating, 2) : null;
@@ -686,7 +700,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
-    
+
     /**
      * @return Collection<int, Review>
      */
@@ -706,6 +720,38 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         });
 
         return new ArrayCollection($iterator);
+    }
+    public function getStatus(): ?UserStatus
+    {
+        return $this->status;
+    }
+
+    public function setStatus(UserStatus $status): static
+    {
+        $this->status = $status;
+        return $this;
+    }
+
+    public function getModeratedAt(): ?\DateTimeImmutable
+    {
+        return $this->moderatedAt;
+    }
+
+    public function setModeratedAt(?\DateTimeImmutable $moderatedAt): static
+    {
+        $this->moderatedAt = $moderatedAt;
+        return $this;
+    }
+
+    public function getModerationComment(): ?string
+    {
+        return $this->moderationComment;
+    }
+
+    public function setModerationComment(?string $moderationComment): static
+    {
+        $this->moderationComment = $moderationComment;
+        return $this;
     }
 
     public function __toString(): string

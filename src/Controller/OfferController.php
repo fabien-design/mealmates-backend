@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Enums\OfferReportStatus;
 use App\Repository\AddressRepository;
 use App\Repository\AllergenRepository;
 use App\Repository\FoodPreferenceRepository;
@@ -19,6 +20,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use App\Entity\Offer;
 use App\Entity\Image;
+use App\Entity\User;
 use App\Enums\ImageExtension;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -91,7 +93,7 @@ class OfferController extends AbstractController
             foreach ($user->getFoodPreference() as $foodPreference) {
                 $userFoodPreferences[] = $foodPreference->getId();
             }
-            
+
             if (!empty($userFoodPreferences)) {
                 if (isset($filters['dietaryPreferences'])) {
                     $filters['dietaryPreferences'] = array_unique(array_merge(
@@ -107,7 +109,7 @@ class OfferController extends AbstractController
             foreach ($user->getAllergen() as $allergen) {
                 $userAllergens[] = $allergen->getId();
             }
-            
+
             if (!empty($userAllergens)) {
                 $filters['excludeAllergens'] = $userAllergens;
             }
@@ -638,6 +640,38 @@ class OfferController extends AbstractController
                 'message' => 'Erreur lors de la suppression de l\'offre',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+    #[Route('/products/{id}/report', name: 'api_report_product', methods: ['POST'])]
+    public function reportProduct(
+        Request $request,
+        Offer $Product,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        try {
+            $data = json_decode($request->getContent(), true);
+
+            if (!$data) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Format JSON invalide'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $Product->setReportStatus(OfferReportStatus::NEED_VERIFICATION);
+            $Product->setModerationComment('Signalée: ' . ($data['reason'] ?? 'Aucune raison fournie'));
+            $em->flush();
+
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Offre signalée avec succès.'
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors du signalement: ' . $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
 }

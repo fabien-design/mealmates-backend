@@ -3,6 +3,8 @@
 namespace App\Repository;
 
 use App\Entity\Offer;
+use App\Enums\OfferReportStatus;
+use App\Enums\UserStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\ORM\QueryBuilder;
@@ -26,7 +28,12 @@ class OfferRepository extends ServiceEntityRepository
             ->join('o.seller', 's')
             ->where('o.expiryDate >= :today')
             ->andWhere('o.soldAt IS NULL')
-            ->setParameter('today', new \DateTime('today'));
+            ->setParameter('today', new \DateTime('today'))
+            ->andWhere('s.status LIKE :status')
+            ->setParameter('status', UserStatus::APPROVED->value)
+            ->andWhere('o.status NOT LIKE :offerStatus OR o.status IS NULL OR o.status = :offerApproved')
+            ->setParameter('offerStatus', OfferReportStatus::NEED_VERIFICATION->value)
+            ->setParameter('offerApproved', OfferReportStatus::APPROVED->value);
 
         $this->applyFilters($qb, $filters);
 
@@ -182,6 +189,8 @@ class OfferRepository extends ServiceEntityRepository
             ->andWhere('o.expiryAlertSent = false')
             ->setParameter('today', new \DateTime('today'))
             ->setParameter('expiry_date', $expiryDate)
+            ->andWhere('s.status LIKE :status')
+            ->setParameter('status', UserStatus::APPROVED->value)
             ->orderBy('o.expiryDate', 'ASC');
 
         return $qb->getQuery()->getResult();

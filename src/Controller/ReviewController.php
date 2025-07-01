@@ -250,7 +250,7 @@ class ReviewController extends AbstractController
     }
 
     return $this->json($reviews, Response::HTTP_OK, [], [
-        'groups' => ['review:read', 'review:read:reviewer'],
+      'groups' => ['review:read', 'review:read:reviewer'],
     ]);
   }
 
