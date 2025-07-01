@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Enums\OfferReportStatus;
 use App\Repository\AddressRepository;
 use App\Repository\AllergenRepository;
 use App\Repository\FoodPreferenceRepository;
@@ -19,6 +20,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use App\Entity\Offer;
 use App\Entity\Image;
+use App\Entity\User;
 use App\Enums\ImageExtension;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -44,6 +46,7 @@ class OfferController extends AbstractController
     #[OA\Parameter(name: 'minPrice', in: 'query', required: false, schema: new OA\Schema(type: 'number', format: 'float'))]
     #[OA\Parameter(name: 'maxPrice', in: 'query', required: false, schema: new OA\Schema(type: 'number', format: 'float'))]
     #[OA\Parameter(name: 'dietaryPreferences', in: 'query', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'forMe', in: 'query', required: false, schema: new OA\Schema(type: 'boolean', default: false), description: 'Filtrer les offres selon les préférences alimentaires et allergènes de l\'utilisateur connecté')]
     public function getNearbyProducts(Request $request, OfferRepository $offerRepository): JsonResponse
     {
         $lat = $request->query->get('lat');
@@ -80,6 +83,36 @@ class OfferController extends AbstractController
 
         if ($request->query->has('dietaryPreferences')) {
             $filters['dietaryPreferences'] = explode(',', $request->query->get('dietaryPreferences'));
+        }
+
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if ($user && $request->query->has('forMe')) {
+            $userFoodPreferences = [];
+            foreach ($user->getFoodPreference() as $foodPreference) {
+                $userFoodPreferences[] = $foodPreference->getId();
+            }
+
+            if (!empty($userFoodPreferences)) {
+                if (isset($filters['dietaryPreferences'])) {
+                    $filters['dietaryPreferences'] = array_unique(array_merge(
+                        $filters['dietaryPreferences'],
+                        $userFoodPreferences
+                    ));
+                } else {
+                    $filters['dietaryPreferences'] = $userFoodPreferences;
+                }
+            }
+
+            $userAllergens = [];
+            foreach ($user->getAllergen() as $allergen) {
+                $userAllergens[] = $allergen->getId();
+            }
+
+            if (!empty($userAllergens)) {
+                $filters['excludeAllergens'] = $userAllergens;
+            }
         }
 
         $offers = $offerRepository->findNearbyOffers($lat, $lng, $radius, $filters);
@@ -481,6 +514,20 @@ class OfferController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
 
+        if ($offer->getIsDeletedAt() !== null) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Impossible de modifier une offre supprimée'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($offer->getBuyer() !== null) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Impossible de modifier avec une réservation'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
         try {
             $serializer->deserialize(
                 $request->getContent(),
@@ -593,6 +640,38 @@ class OfferController extends AbstractController
                 'message' => 'Erreur lors de la suppression de l\'offre',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+    #[Route('/products/{id}/report', name: 'api_report_product', methods: ['POST'])]
+    public function reportProduct(
+        Request $request,
+        Offer $Product,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        try {
+            $data = json_decode($request->getContent(), true);
+
+            if (!$data) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Format JSON invalide'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $Product->setReportStatus(OfferReportStatus::NEED_VERIFICATION);
+            $Product->setModerationComment('Signalée: ' . ($data['reason'] ?? 'Aucune raison fournie'));
+            $em->flush();
+
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Offre signalée avec succès.'
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors du signalement: ' . $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
 }

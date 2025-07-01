@@ -21,8 +21,7 @@ class QrCodeService
         private TokenStorageInterface $tokenStorage,
         private TransactionNotificationService $notificationService,
         private readonly TransactionRepository $transactionRepository
-    ) {
-    }
+    ) {}
 
     public function generateQrCode(Transaction $transaction): string
     {
@@ -57,45 +56,11 @@ class QrCodeService
 
         $transaction->setQrCodeToken($token);
         $transaction->setQrCodeExpiresAt($expiryDate);
-        
+
         $this->entityManager->persist($transaction);
         $this->entityManager->flush();
 
         return $token;
-    }
-
-    public function verifyQrCode(string $token): Transaction
-    {
-        /** @var Transaction|null $transaction */
-        $transaction = $this->transactionRepository->findOneBy(['qrCodeToken' => $token]);
-        
-        if (!$transaction) {
-            throw new \Exception('QR code invalide.');
-        }
-        
-        /** @var User $user */
-        $user = $this->tokenStorage->getToken()->getUser();
-        if ($user->getId() !== $transaction->getSeller()->getId()) {
-            throw new \Exception('Seul le vendeur peut scanner ce QR code.');
-        }
-
-        if ($transaction->isQrCodeExpired()) {
-            throw new \Exception('Ce QR code a expiré. Demandez à l\'acheteur de générer un nouveau QR code.');
-        }
-
-        if ($transaction->isFree()) {
-            if (!$transaction->isPending()) {
-                throw new \Exception('Cette transaction n\'est pas dans un état valide pour être finalisée.');
-            }
-        } else {
-            if (!$transaction->isPending()) {
-                throw new \Exception('Le paiement n\'a pas été effectué pour cette transaction.');
-            }
-        }
-
-        $this->notificationService->notifyQrCodeValidation($transaction);
-        
-        return $transaction;
     }
 
     public function completeTransactionByQrCode(Transaction $transaction): Transaction
@@ -125,12 +90,12 @@ class QrCodeService
             $transaction->setStatus(TransactionStatus::COMPLETED);
             $transaction->setTransferredAt(new \DateTimeImmutable());
         }
-        
+
         $transaction->setQrCodeToken(null);
         $transaction->setQrCodeExpiresAt(null);
-        
+
         $offer->setSoldAt(new \DateTime());
-        
+
         $this->entityManager->persist($transaction);
         $this->entityManager->persist($offer);
         $this->entityManager->flush();
@@ -144,7 +109,7 @@ class QrCodeService
     {
         $canGenerate = true;
         $reason = '';
-        
+
         if ($transaction->isFree()) {
             if (!$transaction->isPending()) {
                 $canGenerate = false;
@@ -178,7 +143,7 @@ class QrCodeService
     {
         $transaction->setQrCodeToken(null);
         $transaction->setQrCodeExpiresAt(null);
-        
+
         $this->entityManager->persist($transaction);
         $this->entityManager->flush();
     }
@@ -195,7 +160,7 @@ class QrCodeService
      * Nettoie les QR codes expirés (méthode utilitaire) -- claude.ai
      */
     public function cleanupExpiredQrCodes(): int
-    {        
+    {
         $expiredTransactions = $this->transactionRepository->findExpiredQrCodes();
 
         $count = 0;

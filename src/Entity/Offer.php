@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enums\OfferReportStatus;
 use App\Repository\OfferRepository;
 use App\Enums\OfferStatus;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -124,6 +125,18 @@ class Offer
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $isDeletedAt = null;
+
+    #[ORM\Column(length: 20, enumType: OfferReportStatus::class, nullable: true)]
+    #[Groups(['offer:read'])]
+    private ?OfferReportStatus $status = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['offer:read'])]
+    private ?\DateTimeImmutable $moderatedAt = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['offer:read', 'admin:read'])]
+    private ?string $moderationComment = null;
 
     public function __construct()
     {
@@ -446,6 +459,40 @@ class Offer
     {
         $this->isDeletedAt = $isDeletedAt;
 
+        return $this;
+    }
+
+
+    public function getReportStatus(): ?OfferReportStatus
+    {
+        return $this->status;
+    }
+
+    public function setReportStatus(OfferReportStatus $status): static
+    {
+        $this->status = $status;
+        return $this;
+    }
+
+    public function getModeratedAt(): ?\DateTimeImmutable
+    {
+        return $this->moderatedAt;
+    }
+
+    public function setModeratedAt(?\DateTimeImmutable $moderatedAt): static
+    {
+        $this->moderatedAt = $moderatedAt;
+        return $this;
+    }
+
+    public function getModerationComment(): ?string
+    {
+        return $this->moderationComment;
+    }
+
+    public function setModerationComment(?string $moderationComment): static
+    {
+        $this->moderationComment = $moderationComment;
         return $this;
     }
 }
