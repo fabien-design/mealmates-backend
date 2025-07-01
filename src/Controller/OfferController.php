@@ -505,11 +505,13 @@ class OfferController extends AbstractController
                 ], Response::HTTP_BAD_REQUEST);
             }
 
+            $offer->setDynamicPrice($offer->getPrice());
+
             $em->flush();
 
             return $this->json([
                 'success' => true,
-                'message' => 'Offre modifiée avec succès',
+                'message' => 'Votre offre a été modifiée avec succès.',
                 'offer' => $offer
             ], Response::HTTP_OK, [], [
                 'groups' => ['offer:read'],
@@ -531,11 +533,33 @@ class OfferController extends AbstractController
     #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(
         response: 200,
-        description: 'Offre supprimée avec succès'
+        description: 'Offre marquée comme supprimée avec succès',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'success', type: 'boolean', example: true),
+                new OA\Property(property: 'message', type: 'string', example: 'Offre supprimée avec succès')
+            ]
+        )
     )]
     #[OA\Response(
         response: 403,
-        description: 'Vous n\'êtes pas autorisé à supprimer cette offre'
+        description: 'Vous n\'êtes pas autorisé à supprimer cette offre',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'success', type: 'boolean', example: false),
+                new OA\Property(property: 'message', type: 'string')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Impossible de supprimer une offre déjà vendue',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'success', type: 'boolean', example: false),
+                new OA\Property(property: 'message', type: 'string')
+            ]
+        )
     )]
     public function deleteProduct(Offer $offer, EntityManagerInterface $em): JsonResponse
     {
@@ -554,7 +578,7 @@ class OfferController extends AbstractController
         }
 
         try {
-            $em->remove($offer);
+            $offer->setIsDeletedAt(new \DateTimeImmutable());
             $em->flush();
 
             return $this->json([

@@ -82,7 +82,8 @@ class UserProfileCRUD extends AbstractController
         }
 
         return $this->json($user, Response::HTTP_OK, [], [
-            'groups' => ['user:read', 'user:profile', 'address:read', 'allergen:read', 'food_preference:read']
+            'groups' => ['user:read', 'user:profile', 'address:read', 'allergen:read', 'food_preference:read'],
+            'skip_anonymization' => true
         ]);
     }
 

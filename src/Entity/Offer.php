@@ -122,6 +122,9 @@ class Offer
     #[Groups(['offer:read'])]
     private Collection $transactions;
 
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $isDeletedAt = null;
+
     public function __construct()
     {
         $this->allergens = new ArrayCollection();
@@ -422,7 +425,6 @@ class Offer
     {
         if (!$this->transactions->contains($transaction)) {
             $this->transactions->add($transaction);
-            $transaction->setOffers($this);
         }
 
         return $this;
@@ -430,12 +432,19 @@ class Offer
 
     public function removeTransaction(Transaction $transaction): static
     {
-        if ($this->transactions->removeElement($transaction)) {
-            // set the owning side to null (unless already changed)
-            if ($transaction->getOffers() === $this) {
-                $transaction->setOffers(null);
-            }
-        }
+        $this->transactions->removeElement($transaction);
+
+        return $this;
+    }
+
+    public function getIsDeletedAt(): ?\DateTimeImmutable
+    {
+        return $this->isDeletedAt;
+    }
+
+    public function setIsDeletedAt(?\DateTimeImmutable $isDeletedAt): static
+    {
+        $this->isDeletedAt = $isDeletedAt;
 
         return $this;
     }

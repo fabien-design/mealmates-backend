@@ -81,17 +81,10 @@ class Transaction
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $qrCodeExpiresAt = null;
 
-    #[ORM\OneToOne(mappedBy: 'transaction', cascade: ['persist', 'remove'])]
-    #[Groups(['transaction:read'])]
-    private ?Review $buyerReview = null;
-    
-    #[ORM\OneToOne(mappedBy: 'transaction', cascade: ['persist', 'remove'])]
-    #[Groups(['transaction:read'])]
-    private ?Review $sellerReview = null;
-    
     #[ORM\OneToMany(mappedBy: 'transaction', targetEntity: Review::class, orphanRemoval: true)]
+    #[Groups(['offer:read'])]
     private Collection $reviews;
-    
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -149,9 +142,9 @@ class Transaction
 
     public function getAmountWithFees(): float
     {
-        $feePercentage = (float)$_ENV['SERVICE_FEES'] ?? 0.0;
+        $feePercentage = (float) $_ENV['SERVICE_FEES'] ?? 0.0;
 
-        return $this->amount * (1 - $feePercentage);
+        return round($this->amount * (1 - $feePercentage), 2);
     }
 
     public function getStatus(): ?TransactionStatus
@@ -349,29 +342,47 @@ class Transaction
 
         return $this->qrCodeExpiresAt < new \DateTimeImmutable();
     }
-    
+
+    #[Groups(['transaction:read'])]
     public function getBuyerReview(): ?Review
     {
-        return $this->buyerReview;
+        foreach ($this->reviews as $review) {
+            if ($review->getReviewer() === $this->getBuyer()) {
+                return $review;
+            }
+        }
+        return null;
     }
 
     public function setBuyerReview(?Review $buyerReview): static
     {
-        $this->buyerReview = $buyerReview;
+        if ($buyerReview) {
+            $this->addReview($buyerReview);
+        }
+
         return $this;
     }
 
+    #[Groups(['transaction:read'])]
     public function getSellerReview(): ?Review
     {
-        return $this->sellerReview;
+        foreach ($this->reviews as $review) {
+            if ($review->getReviewer() === $this->getSeller()) {
+                return $review;
+            }
+        }
+        return null;
     }
 
     public function setSellerReview(?Review $sellerReview): static
     {
-        $this->sellerReview = $sellerReview;
+        if ($sellerReview) {
+            $this->addReview($sellerReview);
+        }
+
         return $this;
     }
-    
+
     /**
      * @return Collection<int, Review>
      */
@@ -385,13 +396,6 @@ class Transaction
         if (!$this->reviews->contains($review)) {
             $this->reviews->add($review);
             $review->setTransaction($this);
-            
-            // Automatically set the appropriate review type based on the reviewer
-            if ($review->getReviewer() === $this->getBuyer()) {
-                $this->setBuyerReview($review);
-            } elseif ($review->getReviewer() === $this->getSeller()) {
-                $this->setSellerReview($review);
-            }
         }
 
         return $this;
@@ -404,18 +408,11 @@ class Transaction
             if ($review->getTransaction() === $this) {
                 $review->setTransaction(null);
             }
-            
-            // Remove specific review references
-            if ($this->buyerReview === $review) {
-                $this->buyerReview = null;
-            } elseif ($this->sellerReview === $review) {
-                $this->sellerReview = null;
-            }
         }
 
         return $this;
     }
-    
+
     public function canBeReviewed(): bool
     {
         return $this->status === TransactionStatus::COMPLETED;

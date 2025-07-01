@@ -326,8 +326,10 @@ class PaymentController extends AbstractController
         $errorMessage = '';
 
         if ($transaction->isFree()) {
-            $isReadyForQr = $transaction->isConfirmed();
-            $errorMessage = 'Le vendeur doit d\'abord confirmer la réservation';
+            $isReadyForQr = $transaction->isPending(); 
+            if (!$transaction->isPending()) {
+                $errorMessage = 'Le vendeur doit d\'abord confirmer la réservation';
+            }
         } else {
             $isReadyForQr = $transaction->isPending();
             if ($transaction->isConfirmed() && !$transaction->isPending()) {

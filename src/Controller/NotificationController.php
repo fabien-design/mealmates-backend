@@ -153,7 +153,7 @@ class NotificationController extends AbstractController
 
         return $this->json([
             'success' => true,
-            'message' => 'Toutes les notifications ont été marquées comme lues',
+            'message' => 'Toutes les notifications ont été marquées comme lues.',
             'updated_count' => $updatedCount
         ], Response::HTTP_OK);
     }

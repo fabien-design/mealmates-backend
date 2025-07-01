@@ -71,7 +71,12 @@ class ReservationService
             throw new \Exception('Cette réservation a expiré.');
         }
 
-        $transaction->setStatus(TransactionStatus::CONFIRMED);
+        if ($transaction->isFree()) {
+            $transaction->setStatus(TransactionStatus::PENDING);
+        } else {
+            $transaction->setStatus(TransactionStatus::CONFIRMED);
+        }
+
         $transaction->setReservationExpiresAt(null);
         $this->entityManager->persist($transaction);
         $this->entityManager->flush();

@@ -279,6 +279,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->last_name;
     }
 
+    public function getLastNameInitial(): ?string
+    {
+        return $this->last_name ? strtoupper($this->last_name[0]). '.' : '';
+    }
+
     public function setLastName(?string $last_name): static
     {
         $this->last_name = $last_name;
@@ -300,8 +305,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getFullName(): string
     {
-        $lastNameInitial = $this->last_name ? strtoupper($this->last_name[0]) . '.' : '';
-        return trim(sprintf('%s %s', $this->first_name ?? '', $lastNameInitial));
+        return trim(sprintf('%s %s', $this->first_name ?? '', $this->getLastNameInitial()));
     }
 
     public function getGoogleId(): ?string
@@ -672,12 +676,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     
     public function getAverageRating(): ?float
     {
-        return $this->averageRating;
+        return $this->averageRating ? round($this->averageRating, 2) : null;
     }
 
     public function setAverageRating(?float $averageRating): static
     {
-        $this->averageRating = $averageRating;
+        $this->averageRating = $averageRating !== null ? round($averageRating, 2) : null;
 
         return $this;
     }
