@@ -243,14 +243,15 @@ class ReviewController extends AbstractController
   )]
   public function getUserReviews(User $user, ReviewRepository $reviewRepository): JsonResponse
   {
-    $reviews = $reviewRepository->findApprovedReviewsForUser($user);
+    $reviews = $reviewRepository->findReviewsForUser($user, [ReviewStatus::APPROVED, ReviewStatus::PENDING]);
 
-    return $this->json(
-      $reviews,
-      Response::HTTP_OK,
-      [],
-      ['groups' => ['review:read']]
-    );
+    if (!$reviews) {
+      return $this->json([], Response::HTTP_OK);
+    }
+
+    return $this->json($reviews, Response::HTTP_OK, [], [
+        'groups' => ['review:read', 'review:read:reviewer'],
+    ]);
   }
 
   #[Route('/users/{id}/ratings', methods: ['GET'])]

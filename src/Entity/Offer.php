@@ -17,11 +17,11 @@ class Offer
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups('offer:read')]
+    #[Groups('offer:read', 'review:read')]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['offer:read', 'offer:write'])]
+    #[Groups(['offer:read', 'offer:write', 'review:read'])]
     #[Assert\NotBlank(message: "Le nom ne peut pas être vide")]
     #[Assert\Length(
         min: 2,

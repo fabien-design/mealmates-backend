@@ -19,18 +19,21 @@ class ReviewRepository extends ServiceEntityRepository
   }
 
   /**
+   * @param User $user The user for whom to find reviews
+   * @param ReviewStatus[] $status The statuses of the reviews to find (e.g., APPROVED, PENDING)
+   * 
    * @return Review[] Returns an array of approved Review objects for a user
    */
-  public function findApprovedReviewsForUser(User $user): array
+  public function findReviewsForUser(User $user, array $status): array
   {
-    return $this->createQueryBuilder('r')
+    $qb = $this->createQueryBuilder('r')
       ->andWhere('r.reviewed = :user')
-      ->andWhere('r.status = :status')
+      ->andWhere('r.status IN (:status)')
       ->setParameter('user', $user)
-      ->setParameter('status', ReviewStatus::APPROVED)
-      ->orderBy('r.createdAt', 'DESC')
-      ->getQuery()
-      ->getResult();
+      ->setParameter('status', $status)
+      ->orderBy('r.createdAt', 'DESC');
+
+    return $qb->getQuery()->getResult();
   }
 
   public function findAverageRatingsForUser(User $user): array
@@ -46,11 +49,32 @@ class ReviewRepository extends ServiceEntityRepository
       ->getQuery()
       ->getOneOrNullResult();
 
+    $nonNullCount = 0;
+    $sum = 0;
+    
+    if ($result['avgProductQuality'] !== null) {
+      $nonNullCount++;
+      $sum += $result['avgProductQuality'];
+    }
+    
+    if ($result['avgAppointmentRespect'] !== null) {
+      $nonNullCount++;
+      $sum += $result['avgAppointmentRespect'];
+    }
+    
+    if ($result['avgFriendliness'] !== null) {
+      $nonNullCount++;
+      $sum += $result['avgFriendliness'];
+    }
+  
+    $avgOverall = $nonNullCount > 0 ? $sum / $nonNullCount : 0;
+    
     return [
       'avgProductQuality' => $result['avgProductQuality'] ?? 0,
       'avgAppointmentRespect' => $result['avgAppointmentRespect'] ?? 0,
       'avgFriendliness' => $result['avgFriendliness'] ?? 0,
-      'avgOverall' => (($result['avgProductQuality'] ?? 0) + ($result['avgAppointmentRespect'] ?? 0) + ($result['avgFriendliness'] ?? 0)) / 3
+      'avgOverall' => $avgOverall,
+      'totalReviews' => count($this->findReviewsForUser($user, [ReviewStatus::APPROVED, ReviewStatus::PENDING]))
     ];
   }
 
